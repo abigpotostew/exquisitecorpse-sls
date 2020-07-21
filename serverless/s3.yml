@@ -1,0 +1,56 @@
+Resources:
+  ImageBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${self:provider.stage}-${self:provider.region}-images
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          IgnorePublicAcls: true
+          BlockPublicPolicy: true
+          RestrictPublicBuckets: true
+  StaticBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${self:provider.stage}-${self:provider.region}-static
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          IgnorePublicAcls: true
+          BlockPublicPolicy: true
+          RestrictPublicBuckets: true
+
+# Type: AWS::S3::BucketPolicy
+  #    Properties:
+  #      Bucket:
+  #        Ref: S3BlobStore
+  #      PolicyDocument:
+  #        Statement:
+  #          -
+  #            Action:
+  #              - "s3:PutObject*"
+  #              - "s3:GetObject*"
+  #              - "s3:DeleteObject*"
+  #            Effect: "Deny"
+  #            Resource:
+  #             - arn:aws:s3:::${self:provider.environment.BLOB_STORE_BUCKET}/*
+  #             - arn:aws:s3:::${self:provider.environment.BLOB_STORE_BUCKET}
+  #            Principal: "*"
+  #            Condition:
+  #              StringNotLike:
+  #                aws:userid:
+  #                  - ${self:custom.iam.TASK_ROLE_ID}:*
+  #                  - ${self:custom.iam.SCHEDULER_ROLE_ID}
+  #                  - ${self:custom.iam.STAGING_ADMIN_ROLE_ID}:*
+  #          -
+  #            Action:
+  #              - "s3:PutObject*"
+  #              - "s3:DeleteObject*"
+  #            Effect: "Deny"
+  #            Resource:
+  #              - arn:aws:s3:::${self:provider.environment.BLOB_STORE_BUCKET}/*
+  #              - arn:aws:s3:::${self:provider.environment.BLOB_STORE_BUCKET}
+  #            Principal: "*"
+  #            Condition:
+  #              StringLike:
+  #                aws:userid:
+  #                  - ${self:custom.iam.SCHEDULER_ROLE_ID}
+

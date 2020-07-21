@@ -1,0 +1,7 @@
+dev:
+  domain: playexquisitecorpse-dev.com
+  certificate: arn:aws:acm:us-west-1:031580428391:certificate/ad7e3110-5da2-4f9e-a1a5-1a1567d5fb91
+
+prod:
+  domain: playexquisitecorpse.com
+  certificate: arn:aws:acm:us-west-1:031580428391:certificate/57559b18-b946-4e89-9a8d-1283477d72bc

@@ -1,0 +1,178 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: exquisitecorpse
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+frameworkVersion: '>=1.28.0 <2.0.0'
+
+plugins:
+  - serverless-s3-deploy
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: ${opt:stage}
+  region: us-west-1
+  profile: stewdevadmin
+  versionFunctions: false
+  usagePlan:
+    quota:
+      limit: 5000
+      offset: 2
+      period: MONTH
+    throttle:
+      burstLimit: 200
+      rateLimit: 100
+
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+
+# you can add statements to the Lambda function's IAM Role here
+#  iamRoleStatements:
+#    - Effect: "Allow"
+#      Action:
+#        - "s3:ListBucket"
+#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+#    - Effect: "Allow"
+#      Action:
+#        - "s3:PutObject"
+#      Resource:
+#        Fn::Join:
+#          - ""
+#          - - "arn:aws:s3:::"
+#            - "Ref" : "ServerlessDeploymentBucket"
+#            - "/*"
+
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+
+functions:
+  api:
+    memorySize: 256
+    handler: bin/api
+    role: apiExecRole
+    environment:
+      imageBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-images
+    events:
+      - http:
+          path: /api/{proxy+}
+          method: get
+      - http:
+          path: /api/{proxy+}
+          method: POST
+  client:
+    memorySize: 256
+    handler: bin/client
+    role: clientExecRole
+    environment:
+      staticBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-static
+    events:
+      - http:
+          path: /
+          method: get
+      - http:
+          path: /game/{id}
+          method: get
+      - http:
+          path: /static/{proxy+}
+          method: get
+#    The following are a few example events you can configure
+#    NOTE: Please make sure to change your handler code to work with those events
+#    Check the event documentation for details
+# events:
+#    events:
+#      - http:
+#          path: users/create
+#          method: get
+#      - websocket: $connect
+#      - s3: ${env:BUCKET}
+#      - schedule: rate(10 minutes)
+#      - sns: greeter-topic
+#      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
+#      - alexaSkill: amzn1.ask.skill.xx-xx-xx-xx
+#      - alexaSmartHome: amzn1.ask.skill.xx-xx-xx-xx
+#      - iot:
+#          sql: "SELECT * FROM 'some_topic'"
+#      - cloudwatchEvent:
+#          event:
+#            source:
+#              - "aws.ec2"
+#            detail-type:
+#              - "EC2 Instance State-change Notification"
+#            detail:
+#              state:
+#                - pending
+#      - cloudwatchLog: '/aws/lambda/hello'
+#      - cognitoUserPool:
+#          pool: MyUserPool
+#          trigger: PreSignUp
+#      - alb:
+#          listenerArn: arn:aws:elasticloadbalancing:us-east-1:XXXXXX:listener/app/my-load-balancer/50dc6c495c0c9188/
+#          priority: 1
+#          conditions:
+#            host: example.com
+#            path: /hello
+
+#    Define function environment variables here
+#    environment:
+#      variable2: value2
+
+# you can add CloudFormation resource templates here
+
+
+#  Outputs:
+#     NewOutput:
+#       Description: "Description for the output"
+#       Value: "Some output value"
+
+custom:
+  assets:
+    auto: true
+    targets:
+      - bucket:
+          Ref: StaticBucket
+        files:
+          - source: static/
+            globs:
+              - '**/*.js'
+              - '**/*.html'
+
+#  resources:
+#    # AWS CloudFormation Template
+#    Resources:
+#      MyBucket:
+#        Type: AWS::S3::Bucket
+#        Properties:
+#          AccessControl: PublicRead
+#          WebsiteConfiguration:
+#            IndexDocument: index.html
+#            ErrorDocument: index.html
+
+resources:
+  - ${file(serverless/s3.yml)}
+  - ${file(serverless/roles.yml)}
