@@ -23,7 +23,7 @@ func TestHandler(t *testing.T) {
 
 	router := gin.Default()
 	group := router.Group("/")
-	group.Use(auth.UsernameHeaderRequired())
+	group.Use(auth.UsernameContext())
 	service := &segment.S3Service{
 		S3:         s3Sess,
 		BucketName: "exquisitecorpse-dev-us-west-1-images",

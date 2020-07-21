@@ -1,4 +1,4 @@
-var loadedSegmentsMetadata=null
+var loadedSegmentsMetadata = null
 const sketchHolder = (sketch) => {
 
     // const queryParameters = {
@@ -42,7 +42,7 @@ const sketchHolder = (sketch) => {
         let instructions = ""
         switch (stage) {
             case HEAD_STAGE:
-                instructions = "You are drawing the head in the top section. Draw an exquisite head and be sure to draw hints for where the torso should connect. When complete, generate a share URL and give it to the second artist.";
+                instructions = "You are drawing the head in the top section. Be sure to draw hint lines for where the torso should connect in the middle section. When complete, generate a share URL and give it to the second artist.";
                 break;
             case TORSO_STAGE:
                 instructions = "You are drawing the torso in the middle section. Be sure to connect your torso to the head using the hint lines given by the first artist. Similarly make sure to draw hints for where the legs should connect to your torso. When complete, generate a share URL and give it to the third artist.";
@@ -54,23 +54,23 @@ const sketchHolder = (sketch) => {
                 instructions = "Behold! The exquisite corpse is complete. "
         }
 
-        function arrayToSentence (arr) {
+        function arrayToSentence(arr) {
             var last = arr.pop();
             return arr.join(', ') + ' and ' + last;
         }
 
         var instrBoxEl = document.getElementById("stageInstructions")
-        instrBoxEl.innerText=""; // clear it
+        instrBoxEl.innerText = ""; // clear it
         var instrBox = $(instrBoxEl);
-        instrBox.append('<p>'+instructions+'</p>')
+        instrBox.append('<p>' + instructions + '</p>')
 
-        if (stage===END_STAGE && loadedSegmentsMetadata!==null){
+        if (stage === END_STAGE && loadedSegmentsMetadata !== null) {
             let creators = _.map(loadedSegmentsMetadata, function (s) {
                 return s.creator
             })
             creators = _.uniq(creators)
-            creators = "This was created by "+arrayToSentence(creators)
-            $(instrBox).append('<p>'+creators+'</p>')
+            creators = "Drawn by " + arrayToSentence(creators) + "."
+            $(instrBox).append('<p>' + creators + '</p>')
         }
     }
 
@@ -79,7 +79,7 @@ const sketchHolder = (sketch) => {
         sketch.background(0);
 
         loadData(sketch)
-        if (stage === END_STAGE) {
+        if (stage === END_STAGE || !hasSetUsername()) {
             sketch.noLoop()
         }
 
@@ -134,6 +134,9 @@ const sketchHolder = (sketch) => {
     }
 
     function generateShareURL() {
+        if (stage === END_STAGE){
+            return
+        }
         function serialize(buf) {
             var data = buf.canvas.toDataURL(imageFormat, imageQuality);
             return data
@@ -293,14 +296,23 @@ function getSegmentId() {
     return null
 }
 
-if (document.cookie.split(';').some((item) => item.trim().startsWith('username='))) {
-    const usernameValue = document.cookie
+function hasSetUsername() {
+    return document.cookie.split(';').some((item) => item.trim().startsWith('username='))
+}
+
+function getUsername() {
+    return document.cookie
         .split('; ')
         .find(row => row.startsWith('username'))
         .split('=')[1];
+}
 
+if (hasSetUsername()) {
+    const usernameValue = getUsername();
     $("#usernameValueContainer")[0].innerHTML = "User: " + usernameValue
+}
 
+(function () {
     let gameId = getSegmentId();
     if (gameId !== null) {
         //get the segments and follow parent chain up
@@ -344,15 +356,19 @@ if (document.cookie.split(';').some((item) => item.trim().startsWith('username='
 
                     loadSegmentImage(0)
                 }
-            }).fail(function () {
+            }).fail(function (e) {
                 console.error("failed to load game ", gameId)
+                console.error(e)
             });
         }
 
         loadSegment(gameId)
+    }else{
+        // new game
+        let myp5 = new p5(sketchHolder, "sketchContainer");
     }
-} else {
-    let myp5 = new p5(sketchHolder, "sketchContainer");
-}
+})()
+
+
 
 

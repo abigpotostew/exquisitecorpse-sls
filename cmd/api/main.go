@@ -32,6 +32,7 @@ func ginHandle(service segment.Service, group *gin.RouterGroup) {
 	})
 
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
+
 		if c.ContentType() != requiredImageType {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
@@ -41,13 +42,16 @@ func ginHandle(service segment.Service, group *gin.RouterGroup) {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
+		if !auth.HasUsername(c) {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 
-		uname, _ := c.Get(auth.UsernameCtxKey)
 		parentID := c.Param("parent")
 
 		createSeg := segment.RequestCreateSegment{
 			Parent:      parentID,
-			Creator:     uname.(string),
+			Creator:     auth.GetUsername(c),
 			Content:     data,
 			ContentType: c.ContentType(),
 		}
@@ -71,10 +75,14 @@ func ginHandle(service segment.Service, group *gin.RouterGroup) {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-		uname, _ := c.Get(auth.UsernameCtxKey)
+		if !auth.HasUsername(c) {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
 		createSeg := segment.RequestCreateSegment{
 			Parent:      "",
-			Creator:     uname.(string),
+			Creator:     auth.GetUsername(c),
 			Content:     data,
 			ContentType: c.ContentType(),
 			Order:       0,
@@ -103,7 +111,7 @@ func main() {
 
 	r := gin.Default()
 	authorized := r.Group("/")
-	authorized.Use(auth.UsernameHeaderRequired())
+	authorized.Use(auth.UsernameContext())
 	ginHandle(service, authorized)
 
 	ginLambda = ginadapter.New(r)
