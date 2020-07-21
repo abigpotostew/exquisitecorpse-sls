@@ -1,5 +1,7 @@
 A website to play the art game exquisite corpse.
 
+This is live at https://www.playexquisitecorpse.com
+
 
 Prerequisites:
     - https://www.serverless.com/plugins/serverless-s3-deploy
