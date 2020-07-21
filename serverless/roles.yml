@@ -3,7 +3,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       Path: /my/default/path/
-      RoleName: apiExecRole # required if you want to use 'serverless deploy --function' later on
+      RoleName: ${self:service}-${self:provider.stage}-apiExecRole # required if you want to use 'serverless deploy --function' later on
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -16,7 +16,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       Policies:
-        - PolicyName: apiExecPolicy
+        - PolicyName: ${self:service}-${self:provider.stage}-apiExecPolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -55,7 +55,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       Path: /my/default/path/
-      RoleName: clientExecRole # required if you want to use 'serverless deploy --function' later on
+      RoleName: ${self:service}-${self:provider.stage}-clientExecRole # required if you want to use 'serverless deploy --function' later on
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -68,7 +68,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       Policies:
-        - PolicyName: clientExecPolicy
+        - PolicyName: ${self:service}-${self:provider.stage}-clientExecPolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
