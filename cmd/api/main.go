@@ -41,13 +41,17 @@ func ginHandle(service segment.Service, group *gin.RouterGroup) {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
+
 		uname, _ := c.Get(auth.UsernameCtxKey)
+		parentID := c.Param("parent")
+
 		createSeg := segment.RequestCreateSegment{
-			Parent:      c.Param("parent"),
+			Parent:      parentID,
 			Creator:     uname.(string),
 			Content:     data,
 			ContentType: c.ContentType(),
 		}
+
 		out, err := service.Create(createSeg)
 		if err != nil {
 			c.AbortWithError(http.StatusInternalServerError, err)
@@ -55,6 +59,7 @@ func ginHandle(service segment.Service, group *gin.RouterGroup) {
 		}
 		c.JSON(200, out)
 	})
+
 	group.POST("/api/v1/segments", func(c *gin.Context) {
 		if c.ContentType() != requiredImageType {
 			log.Println("invalid content type: ", c.ContentType())
@@ -72,6 +77,7 @@ func ginHandle(service segment.Service, group *gin.RouterGroup) {
 			Creator:     uname.(string),
 			Content:     data,
 			ContentType: c.ContentType(),
+			Order:       0,
 		}
 		out, err := service.Create(createSeg)
 		if err != nil {

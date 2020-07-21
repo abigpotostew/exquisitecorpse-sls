@@ -2,7 +2,10 @@ package segment
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/uuid"
@@ -14,6 +17,7 @@ import (
 const (
 	parentMetadatKey  = "Parent"
 	creatorMetadatKey = "Creator"
+	orderMetadatKey   = "Order"
 )
 
 type RequestCreateSegment struct {
@@ -21,6 +25,7 @@ type RequestCreateSegment struct {
 	Creator     string
 	Content     []byte
 	ContentType string
+	Order       int
 }
 
 type Segment struct {
@@ -29,6 +34,7 @@ type Segment struct {
 	Parent      string `json:"parent"`
 	ContentType string `json:"contentType"`
 	URL         string `json:"url"`
+	Order       int    `json:"order"`
 }
 
 type Service interface {
@@ -45,17 +51,24 @@ func (s *S3Service) Create(segment RequestCreateSegment) (Segment, error) {
 	id := uuid.NewShort()
 	body := bytes.NewReader(segment.Content)
 
+	order := segment.Order
 	//perform get on parent id
 	if segment.Parent != "" {
-		_, err := s.head(segment.Parent)
+		parent, err := s.Get(segment.Parent)
 		if err != nil {
 			return Segment{}, err
 		}
+		if parent == (Segment{}) {
+			return Segment{}, errors.New("404 todo parent not found")
+		}
+		order = parent.Order + 1
 	}
 
+	orderStr := fmt.Sprintf("%d", order)
 	metadata := map[string]*string{
 		parentMetadatKey:  &segment.Parent,
 		creatorMetadatKey: &segment.Creator,
+		orderMetadatKey:   &orderStr,
 	}
 	_, err := s.S3.PutObject(&s3.PutObjectInput{
 		ContentType: &segment.ContentType,
@@ -101,12 +114,22 @@ func (s *S3Service) Get(id string) (out Segment, err error) {
 	if err != nil {
 		return out, err
 	}
+	order, ok := head.Metadata[orderMetadatKey]
+	orderInt := 0
+	if ok {
+		orderInt, err = strconv.Atoi(*order)
+		if err != nil {
+			return Segment{}, err
+		}
+	}
+
 	return Segment{
 		ID:          id,
 		Creator:     *head.Metadata[creatorMetadatKey],
 		Parent:      *head.Metadata[parentMetadatKey],
 		ContentType: *head.ContentType,
 		URL:         url,
+		Order:       orderInt,
 	}, nil
 }
 

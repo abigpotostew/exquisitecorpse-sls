@@ -1,3 +1,4 @@
+var loadedSegmentsMetadata=null
 const sketchHolder = (sketch) => {
 
     // const queryParameters = {
@@ -33,7 +34,7 @@ const sketchHolder = (sketch) => {
     //forward declaration
     var loadData
 
-    var activeDrawingInfo=null
+    var activeDrawingInfo = null
 
 
     function setupInstructions() {
@@ -50,10 +51,27 @@ const sketchHolder = (sketch) => {
                 instructions = "You are drawing the legs in the bottom section. Be sure to connect your legs to the torso hint lines given by the second artist. When complete, generate the final a share URL and share it with all artists. This final URL will reveal the exquisite corpse.";
                 break;
             case END_STAGE:
-                instructions = "Marvel! The exquisite corpse is complete. Refresh the page if any body parts are missing."
+                instructions = "Behold! The exquisite corpse is complete. "
         }
-        var instrBox = document.getElementById("stageInstructions");
-        instrBox.innerText = instructions
+
+        function arrayToSentence (arr) {
+            var last = arr.pop();
+            return arr.join(', ') + ' and ' + last;
+        }
+
+        var instrBoxEl = document.getElementById("stageInstructions")
+        instrBoxEl.innerText=""; // clear it
+        var instrBox = $(instrBoxEl);
+        instrBox.append('<p>'+instructions+'</p>')
+
+        if (stage===END_STAGE && loadedSegmentsMetadata!==null){
+            let creators = _.map(loadedSegmentsMetadata, function (s) {
+                return s.creator
+            })
+            creators = _.uniq(creators)
+            creators = "This was created by "+arrayToSentence(creators)
+            $(instrBox).append('<p>'+creators+'</p>')
+        }
     }
 
     sketch.setup = () => {
@@ -71,19 +89,18 @@ const sketchHolder = (sketch) => {
             generateShareURL();
         })
 
-        $('input:radio[name="drawMode"]').change(
-            function () {
-                if (this.checked && this.value === DRAWMODE_DRAW) {
-                    drawMode = DRAWMODE_DRAW
-                } else if (this.checked && this.value === DRAWMODE_ERASE) {
-                    drawMode = DRAWMODE_ERASE
-                }
-            })
+        $('input:radio[name="drawMode"]').change(function () {
+            if (this.checked && this.value === DRAWMODE_DRAW) {
+                drawMode = DRAWMODE_DRAW
+            } else if (this.checked && this.value === DRAWMODE_ERASE) {
+                drawMode = DRAWMODE_ERASE
+            }
+        })
     };
 
     sketch.draw = () => {
-        if (!sketch.focused){
-            activeDrawingInfo=null
+        if (!sketch.focused) {
+            activeDrawingInfo = null
         }
 
         sketch.background(255)
@@ -154,12 +171,23 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.keyReleased = (e) => {
+        if (e.key === 'd' || e.key === 'D') {
+            drawMode = DRAWMODE_DRAW
+            $('#drawModeDraw').removeAttribute("checked")
+            $('#drawModeErase').setAttribute("checked", "true")
+        }
+        if (e.key === 'e' || e.key === 'E') {
+            drawMode = DRAWMODE_ERASE
+            $('#drawModeDraw').removeAttribute("checked")
+            $('#drawModeErase').setAttribute("checked", "true")
+        }
+
     }
 
-    sketch.mousePressed = (e)=>{
+    sketch.mousePressed = (e) => {
         if (stage !== END_STAGE) {
             let xy = getLocalPosition(e)
-            activeDrawingInfo={previousX:xy[0], previousY:xy[1]}
+            activeDrawingInfo = {previousX: xy[0], previousY: xy[1]}
         }
     }
 
@@ -167,10 +195,10 @@ const sketchHolder = (sketch) => {
         activeDrawingInfo = null
     }
 
-    function getLocalPosition(e){
+    function getLocalPosition(e) {
         let x = sketch.map(e.offsetX, 0, sketch.width, 0, bufferWidth)
         let y = sketch.map(e.offsetY, stage * sectionHeight, stage * sectionHeight + sectionHeightMid, 0, bufferHeightMid)
-        return [x,y]
+        return [x, y]
     }
 
     sketch.mouseDragged = (e) => {
@@ -190,8 +218,8 @@ const sketchHolder = (sketch) => {
             }
 
             let xy = getLocalPosition(e)
-            let x=xy[0]
-            let y=xy[1]
+            let x = xy[0]
+            let y = xy[1]
 
             drawBuffer.stroke(0)//black
             drawBuffer.strokeWeight(drawSize)
@@ -289,14 +317,18 @@ if (document.cookie.split(';').some((item) => item.trim().startsWith('username='
                 var blob = oReq.response;
                 $("body").append('<img class="hideFully" src="" id="imageDataLoader' + segmentIdx + '">')
                 let img = document.getElementById("imageDataLoader" + segmentIdx)
-                img.src = blob
-                console.log("finished loading image " + segmentIdx)
-                if (segmentIdx === segments.length - 1) {
-                    console.log("sketch ready")
-                    let myp5 = new p5(sketchHolder, "sketchContainer");
-                } else {
-                    loadSegmentImage(segmentIdx + 1)
+                img.onload = function () {
+                    console.log("finished loading image " + segmentIdx)
+                    if (segmentIdx === segments.length - 1) {
+                        console.log("sketch ready")
+                        loadedSegmentsMetadata = segments
+                        let myp5 = new p5(sketchHolder, "sketchContainer");
+                    } else {
+                        loadSegmentImage(segmentIdx + 1)
+                    }
                 }
+                img.src = blob
+
             };
             oReq.send(null);
         }
@@ -318,9 +350,9 @@ if (document.cookie.split(';').some((item) => item.trim().startsWith('username='
         }
 
         loadSegment(gameId)
-    } else {
-        let myp5 = new p5(sketchHolder, "sketchContainer");
     }
+} else {
+    let myp5 = new p5(sketchHolder, "sketchContainer");
 }
 
 

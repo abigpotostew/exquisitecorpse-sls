@@ -1,2 +1,9 @@
 Technical:
-- CORS on image bucket
+- CORS on image bucket in sls
+
+Features:
+- hotkeys
+
+Bugs:
+- [x] the img src loads after the sketch loads
+- Can draw when the cursor is off screen to right on first segment.
