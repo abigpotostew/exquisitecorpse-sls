@@ -2,6 +2,7 @@ Technical:
 - CORS on image bucket in sls
 - [x] config per environment -- my.config.yaml
 - [x] usage plan per env!! - did throttling on the stage
+- certificate from serverless
 
 Features:
 - hotkeys
