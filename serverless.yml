@@ -16,6 +16,7 @@ service: exquisitecorpse
 #app: your-app-name
 #org: your-org-name
 
+
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
 # frameworkVersion: "=X.X.X"
@@ -23,6 +24,7 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 
 plugins:
   - serverless-s3-deploy
+  - serverless-api-gateway-throttling
 
 provider:
   name: aws
@@ -31,15 +33,6 @@ provider:
   region: us-west-1
   profile: stewdevadmin
   versionFunctions: false
-  usagePlan:
-    quota:
-      limit: 5000
-      offset: 2
-      period: MONTH
-    throttle:
-      burstLimit: 200
-      rateLimit: 100
-
 
 package:
   exclude:
@@ -79,6 +72,7 @@ functions:
           method: get
 
 custom:
+  config: ${file(./config/my.config.yml):${opt:stage}}
   assets:
     auto: true
     targets:
@@ -89,6 +83,9 @@ custom:
             globs:
               - '**/*.js'
               - '**/*.html'
+  apiGatewayThrottling:
+    maxRequestsPerSecond: ${self:custom.config.throttleRateLimit}
+    maxConcurrentRequests: ${self:custom.config.throttleBurstLimit}
 
 resources:
   - ${file(serverless/s3.yml)}
