@@ -49,11 +49,14 @@ functions:
       imageBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-images
     events:
       - http:
-          path: /api/{proxy+}
-          method: get
+          path: /api
+          method: ANY
       - http:
           path: /api/{proxy+}
-          method: POST
+          method: ANY
+#      - http:
+#          path: /api/{proxy+}
+#          method: POST
   client:
     memorySize: 256
     handler: bin/client
