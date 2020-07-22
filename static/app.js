@@ -1,10 +1,5 @@
 var loadedSegmentsMetadata = null
 const sketchHolder = (sketch) => {
-
-    // const queryParameters = {
-    //     "head":
-    // }
-
     const imageFormat = "image/png";
     const imageQuality = 1.0
 
@@ -143,7 +138,48 @@ const sketchHolder = (sketch) => {
                 sketch.line(0, sectionHeight * i, sketch.width, sectionHeight * i)
             })
         }
+
+        drawMouse()
     };
+
+    function drawMouse(){
+        // user drawing logic:
+        if (stage !== END_STAGE && activeDrawingInfo !== null) {
+            //do drawing
+
+
+
+            // allow draw in a segment
+            let drawSize = 5
+            if (drawMode === DRAWMODE_DRAW) {
+                drawBuffer.noStroke()
+                drawBuffer.fill(0)
+            } else if (drawMode === DRAWMODE_ERASE) {
+                drawBuffer.noStroke()
+                drawBuffer.fill(255, 255, 255, 255)
+                drawBuffer.erase()
+                drawSize *= 2
+            }
+            if (activeDrawingInfo.previousX !==null && sketch.movedX===0 && sketch.movedY===0){
+                return
+            }
+
+            let xy = getLocalPosition(stage,[sketch.pmouseX, sketch.pmouseY, sketch.mouseX, sketch.mouseY])
+
+            drawBuffer.stroke(0)//black
+            drawBuffer.strokeWeight(drawSize)
+            drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
+            // drawBuffer.circle(x, y, drawSize)
+            drawBuffer.noErase()
+
+            activeDrawingInfo.previousX = xy[2]
+            activeDrawingInfo.previousY = xy[3]
+
+            //if the original click is on the screen, prevent default!
+            //todo only prevent default if the click was on the canvas
+            //return false
+        }
+    }
 
     sketch.keyPressed = (e) => {
         if (e.key == 'r') {
@@ -152,9 +188,10 @@ const sketchHolder = (sketch) => {
     }
 
     function generateShareURL() {
-        if (stage === END_STAGE){
+        if (stage === END_STAGE) {
             return
         }
+
         function serialize(buf) {
             var data = buf.canvas.toDataURL(imageFormat, imageQuality);
             return data
@@ -208,8 +245,7 @@ const sketchHolder = (sketch) => {
     sketch.mousePressed = (e) => {
         if (stage !== END_STAGE) {
             //if the mouse is on the screen, prevent default
-            let xy = getLocalPosition(e)
-            activeDrawingInfo = {previousX: xy[0], previousY: xy[1]}
+            activeDrawingInfo = {}
         }
     }
 
@@ -217,50 +253,11 @@ const sketchHolder = (sketch) => {
         activeDrawingInfo = null
     }
 
-    function getLocalPosition(e) {
-        // let left = e.pageX-e.offsetX
-        // let right = e.pageX-e.offsetX
-
-        let x = sketch.map(e.offsetX, 0, sketch.width, 0, bufferWidth)
-        let y = sketch.map(e.offsetY, stage * sectionHeight, stage * sectionHeight + sectionHeightMid, 0, bufferHeightMid)
-        // x = Math.max(Math.min())
-        return [x, y]
+    function getLocalPosition(i,se) {
+        return [se[0], se[1]-i*sectionHeight, se[2], se[3]-i*sectionHeight]
     }
 
     sketch.mouseDragged = (e) => {
-
-        if (stage !== END_STAGE) {
-            //do drawing
-
-            // allow draw in a segment
-            let drawSize = 5
-            if (drawMode === DRAWMODE_DRAW) {
-                drawBuffer.noStroke()
-                drawBuffer.fill(0)
-            } else if (drawMode === DRAWMODE_ERASE) {
-                drawBuffer.noStroke()
-                drawBuffer.fill(255, 255, 255, 255)
-                drawBuffer.erase()
-                drawSize *= 2
-            }
-
-            let xy = getLocalPosition(e)
-            let x = xy[0]
-            let y = xy[1]
-
-            drawBuffer.stroke(0)//black
-            drawBuffer.strokeWeight(drawSize)
-            drawBuffer.line(activeDrawingInfo.previousX, activeDrawingInfo.previousY, x, y)
-            // drawBuffer.circle(x, y, drawSize)
-            drawBuffer.noErase()
-
-            activeDrawingInfo.previousX = x
-            activeDrawingInfo.previousY = y
-
-            //if the original click is on the screen, prevent default!
-            //todo only prevent default if the click was on the canvas
-            //return false
-        }
     }
 
     loadData = function (sketch) {
@@ -372,22 +369,6 @@ if (hasSetUsername()) {
         }
 
         function loadSegment(segmentId) {
-            // $.get("/api/v1/segments/" + segmentId, function (data) {
-            //     segments.push(data)
-            //     if (data.parent !== null && data.parent !== "") {
-            //         loadSegment(data.parent)
-            //     } else {
-            //         //set segments in the images and
-            //         segments.reverse()// head torso tail etc
-            //
-            //         loadSegmentImage(0)
-            //     }
-            // }).fail(function (e) {
-            //     console.error("failed to load game ", gameId)
-            //     console.error(e)
-            // });
-
-
             $.ajax({
                 method: "GET",
                 url: "/api/v1/segments/" + segmentId,
@@ -408,7 +389,7 @@ if (hasSetUsername()) {
         }
 
         loadSegment(gameId)
-    }else{
+    } else {
         // new game
         let myp5 = new p5(sketchHolder, "sketchContainer");
     }
