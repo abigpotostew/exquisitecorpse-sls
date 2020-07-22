@@ -147,8 +147,7 @@ const sketchHolder = (sketch) => {
         if (stage !== END_STAGE && activeDrawingInfo !== null) {
             //do drawing
 
-
-
+            drawBuffer.push()
             // allow draw in a segment
             let drawSize = 5
             if (drawMode === DRAWMODE_DRAW) {
@@ -160,17 +159,19 @@ const sketchHolder = (sketch) => {
                 drawBuffer.erase()
                 drawSize *= 2
             }
-            if (activeDrawingInfo.previousX !==null && sketch.movedX===0 && sketch.movedY===0){
+            // draw upon the first time the user clicks
+            if (activeDrawingInfo.previousX !== undefined && sketch.movedX===0 && sketch.movedY===0){
                 return
             }
 
             let xy = getLocalPosition(stage,[sketch.pmouseX, sketch.pmouseY, sketch.mouseX, sketch.mouseY])
 
+            drawBuffer.translate(-drawSize, -drawSize)
             drawBuffer.stroke(0)//black
             drawBuffer.strokeWeight(drawSize)
             drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
-            // drawBuffer.circle(x, y, drawSize)
             drawBuffer.noErase()
+            drawBuffer.pop()
 
             activeDrawingInfo.previousX = xy[2]
             activeDrawingInfo.previousY = xy[3]
@@ -258,6 +259,7 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.mouseDragged = (e) => {
+        // if (sketch)
     }
 
     loadData = function (sketch) {
