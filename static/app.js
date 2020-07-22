@@ -189,6 +189,7 @@ const sketchHolder = (sketch) => {
 
     sketch.mousePressed = (e) => {
         if (stage !== END_STAGE) {
+            //if the mouse is on the screen, prevent default
             let xy = getLocalPosition(e)
             activeDrawingInfo = {previousX: xy[0], previousY: xy[1]}
         }
@@ -199,12 +200,17 @@ const sketchHolder = (sketch) => {
     }
 
     function getLocalPosition(e) {
+        // let left = e.pageX-e.offsetX
+        // let right = e.pageX-e.offsetX
+
         let x = sketch.map(e.offsetX, 0, sketch.width, 0, bufferWidth)
         let y = sketch.map(e.offsetY, stage * sectionHeight, stage * sectionHeight + sectionHeightMid, 0, bufferHeightMid)
+        // x = Math.max(Math.min())
         return [x, y]
     }
 
     sketch.mouseDragged = (e) => {
+
         if (stage !== END_STAGE) {
             //do drawing
 
@@ -233,7 +239,9 @@ const sketchHolder = (sketch) => {
             activeDrawingInfo.previousX = x
             activeDrawingInfo.previousY = y
 
-            return false
+            //if the original click is on the screen, prevent default!
+            //todo only prevent default if the click was on the canvas
+            //return false
         }
     }
 
@@ -346,7 +354,29 @@ if (hasSetUsername()) {
         }
 
         function loadSegment(segmentId) {
-            $.get("/api/v1/segments/" + segmentId, function (data) {
+            // $.get("/api/v1/segments/" + segmentId, function (data) {
+            //     segments.push(data)
+            //     if (data.parent !== null && data.parent !== "") {
+            //         loadSegment(data.parent)
+            //     } else {
+            //         //set segments in the images and
+            //         segments.reverse()// head torso tail etc
+            //
+            //         loadSegmentImage(0)
+            //     }
+            // }).fail(function (e) {
+            //     console.error("failed to load game ", gameId)
+            //     console.error(e)
+            // });
+
+
+            $.ajax({
+                method: "GET",
+                url: "/api/v1/segments/" + segmentId,
+            }).fail(function (e) {
+                console.error("failed to load game ", gameId)
+                console.error(e)
+            }).done(function (data) {
                 segments.push(data)
                 if (data.parent !== null && data.parent !== "") {
                     loadSegment(data.parent)
@@ -356,9 +386,6 @@ if (hasSetUsername()) {
 
                     loadSegmentImage(0)
                 }
-            }).fail(function (e) {
-                console.error("failed to load game ", gameId)
-                console.error(e)
             });
         }
 
