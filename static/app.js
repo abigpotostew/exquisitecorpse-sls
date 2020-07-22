@@ -12,6 +12,11 @@ const sketchHolder = (sketch) => {
     const TORSO_STAGE = 1
     const LEGS_STAGE = 2
     const stageSections = [HEAD_STAGE, TORSO_STAGE, LEGS_STAGE]
+    const stageNames ={
+        [HEAD_STAGE]:"Head",
+        [TORSO_STAGE]:"Torso",
+        [LEGS_STAGE]:"Legs",
+    }
     const END_STAGE = 3
 
     var stage = HEAD_STAGE
@@ -108,7 +113,13 @@ const sketchHolder = (sketch) => {
         sketch.noSmooth()
         var i = 0
         _.each(buffers, function (buffer) {
+            // if (i<stage){
+            //     sketch.drawingContext.filter = "blur(100px)"
+            // }
             sketch.image(buffer, 0, sectionHeight * i, sectionWidth, sectionHeightMid)
+            // if (i<stage){//doesn't work
+            //     sketch.drawingContext.filter = ""
+            // }
             ++i
         })
         sketch.smooth()
@@ -116,9 +127,16 @@ const sketchHolder = (sketch) => {
         if (stage !== END_STAGE) {
             _.each(stageSections, function (i) {
                 if (stage > i) {
-                    sketch.fillStyle = "#999"
+                    sketch.push()
+                    sketch.fill( "#DDD")
                     sketch.rect(0, sectionHeight * i, sketch.width, sectionHeight)
+                    sketch.textSize(18);
+                    sketch.fill( "#000")
+                    sketch.noStroke()
+                    sketch.text("("+stageNames[i] + " hidden)", sketch.width/2-50, sectionHeight * i + sectionHeight/2);
+                    sketch.pop()
                 }
+
 
                 sketch.stroke(0, 0, 255)
                 sketch.strokeWeight(2)
