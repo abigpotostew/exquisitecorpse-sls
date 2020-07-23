@@ -79,7 +79,7 @@ const sketchHolder = (sketch) => {
         p5cnv = sketch.createCanvas(800, 1200);
         sketch.background(0);
 
-        p5cnv.touchStarted(touchStarted)
+        // p5cnv.touchStarted(touchStarted)
 
         loadData(sketch)
         if (stage === END_STAGE || !hasSetUsername()) {
@@ -103,6 +103,7 @@ const sketchHolder = (sketch) => {
 
     sketch.draw = () => {
         if (!sketch.focused) {
+            console.log("lost focus removing mouse events")
             activeDrawingInfo = null
         }
 
@@ -263,28 +264,32 @@ const sketchHolder = (sketch) => {
 
     sketch.mousePressed = (e) => {
         if (stage !== END_STAGE && mouseEventOnCanvas(e)) {
+            console.log("mouse pressed")
             activeDrawingInfo = {previousX:null, previousY:null}
             return false
         }
     }
 
     sketch.mouseReleased = (e) => {
-        console.log('mouse released"')
+        console.log('mouse released')
         activeDrawingInfo = null
     }
     sketch.touchReleased = (e) => {
+        console.log('touch released')
         activeDrawingInfo = null
     }
     function touchStarted(e){
         if (stage !== END_STAGE && mouseEventOnCanvas(e)) {
+            console.log("touch started canvas")
             activeDrawingInfo = {previousX:null, previousY:null}
             return false
         }
     }
-    // sketch.touchStarted = (e) => {
-    //
-    // }
+    sketch.touchStarted = (e) => {
+        return touchStarted(e)
+    }
     sketch.touchMoved = (e) => {
+        console.log("touch moved")
         return !mouseEventOnCanvas(e)
     }
 
@@ -294,10 +299,20 @@ const sketchHolder = (sketch) => {
 
     function mouseEventOnCanvas(e) {
         let cvsEl = $(".p5Canvas")[0]
-        return e.explicitOriginalTarget === cvsEl
+        // mouse event
+        let target = e.explicitOriginalTarget
+        if (!target){
+            //e.target is for touch event
+            target = e.target
+            if (!target) {
+                console.error("Cannot find mouse or touch event target")
+            }
+        }
+        return target === cvsEl
     }
 
     sketch.mouseDragged = (e) => {
+        console.log("mouse moved")
         return !mouseEventOnCanvas(e)
     }
 
