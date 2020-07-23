@@ -7,10 +7,10 @@ const sketchHolder = (sketch) => {
     const TORSO_STAGE = 1
     const LEGS_STAGE = 2
     const stageSections = [HEAD_STAGE, TORSO_STAGE, LEGS_STAGE]
-    const stageNames ={
-        [HEAD_STAGE]:"Head",
-        [TORSO_STAGE]:"Torso",
-        [LEGS_STAGE]:"Legs",
+    const stageNames = {
+        [HEAD_STAGE]: "Head",
+        [TORSO_STAGE]: "Torso",
+        [LEGS_STAGE]: "Legs",
     }
     const END_STAGE = 3
 
@@ -108,13 +108,7 @@ const sketchHolder = (sketch) => {
         sketch.noSmooth()
         var i = 0
         _.each(buffers, function (buffer) {
-            // if (i<stage){
-            //     sketch.drawingContext.filter = "blur(100px)"
-            // }
             sketch.image(buffer, 0, sectionHeight * i, sectionWidth, sectionHeightMid)
-            // if (i<stage){//doesn't work
-            //     sketch.drawingContext.filter = ""
-            // }
             ++i
         })
         sketch.smooth()
@@ -123,12 +117,12 @@ const sketchHolder = (sketch) => {
             _.each(stageSections, function (i) {
                 if (stage > i) {
                     sketch.push()
-                    sketch.fill( "#DDD")
+                    sketch.fill("#DDD")
                     sketch.rect(0, sectionHeight * i, sketch.width, sectionHeight)
                     sketch.textSize(18);
-                    sketch.fill( "#000")
+                    sketch.fill("#000")
                     sketch.noStroke()
-                    sketch.text("("+stageNames[i] + " hidden)", sketch.width/2-50, sectionHeight * i + sectionHeight/2);
+                    sketch.text("(" + stageNames[i] + " hidden)", sketch.width / 2 - 50, sectionHeight * i + sectionHeight / 2);
                     sketch.pop()
                 }
 
@@ -142,7 +136,7 @@ const sketchHolder = (sketch) => {
         drawMouse()
     };
 
-    function drawMouse(){
+    function drawMouse() {
         // user drawing logic:
         if (stage !== END_STAGE && activeDrawingInfo !== null) {
             //do drawing
@@ -165,11 +159,25 @@ const sketchHolder = (sketch) => {
                 drawSize *= 2
             }
             // draw upon the first time the user clicks
-            if (activeDrawingInfo.previousX !== undefined && sketch.movedX===0 && sketch.movedY===0){
+            if (activeDrawingInfo.previousX !== undefined && sketch.movedX === 0 && sketch.movedY === 0) {
                 return
             }
 
-            let xy = getLocalPosition(stage,[sketch.pmouseX, sketch.pmouseY, sketch.mouseX, sketch.mouseY])
+            let xy = null
+            if (sketch.touches && sketch.touches.length > 0) {
+                // sketch.mouseX, sketch.mouseY
+                xy = getLocalPosition(stage, [sketch.touches[0].x, sketch.touches[0].y, sketch.touches[0].x, sketch.touches[0].y])
+                // xy = getLocalPosition(stage, [activeDrawingInfo.previousX | sketch.touches[0].x, activeDrawingInfo.previousY | sketch.touches[0].y, sketch.touches[0].x, sketch.touches[0].y])
+
+                activeDrawingInfo.previousX = sketch.touches[0].x
+                activeDrawingInfo.previousY =sketch.touches[0].y
+            } else {
+                xy = getLocalPosition(stage, [sketch.pmouseX, sketch.pmouseY, sketch.mouseX, sketch.mouseY])
+
+                activeDrawingInfo.previousX = sketch.mouseX
+                activeDrawingInfo.previousY = sketch.mouseY
+            }
+
 
             // drawBuffer.stroke(0)//black
             drawBuffer.strokeWeight(drawSize)
@@ -182,8 +190,6 @@ const sketchHolder = (sketch) => {
                 drawBuffer.noErase()
             // }
 
-            activeDrawingInfo.previousX = xy[2]
-            activeDrawingInfo.previousY = xy[3]
 
             //if the original click is on the screen, prevent default!
             //todo only prevent default if the click was on the canvas
@@ -253,9 +259,9 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.mousePressed = (e) => {
-        if (stage !== END_STAGE) {
-            //if the mouse is on the screen, prevent default
-            activeDrawingInfo = {}
+        if (stage !== END_STAGE && mouseEventOnCanvas(e)) {
+            activeDrawingInfo = {previousX:null, previousY:null}
+            return false
         }
     }
 
@@ -263,13 +269,30 @@ const sketchHolder = (sketch) => {
         console.log('mouse released"')
         activeDrawingInfo = null
     }
+    sketch.touchReleased = (e) => {
+        activeDrawingInfo = null
+    }
+    sketch.touchStarted = (e) => {
+        if (stage !== END_STAGE && mouseEventOnCanvas(e)) {
+            activeDrawingInfo = {previousX:null, previousY:null}
+            return false
+        }
+    }
+    sketch.touchMoved = (e) => {
+        return !mouseEventOnCanvas(e)
+    }
 
-    function getLocalPosition(i,se) {
-        return [se[0], se[1]-i*sectionHeight, se[2], se[3]-i*sectionHeight]
+    function getLocalPosition(i, se) {
+        return [se[0], se[1] - i * sectionHeight, se[2], se[3] - i * sectionHeight]
+    }
+
+    function mouseEventOnCanvas(e) {
+        let cvsEl = $(".p5Canvas")[0]
+        return e.explicitOriginalTarget === cvsEl
     }
 
     sketch.mouseDragged = (e) => {
-        // if (sketch)
+        return !mouseEventOnCanvas(e)
     }
 
     loadData = function (sketch) {
@@ -406,7 +429,3 @@ if (hasSetUsername()) {
         let myp5 = new p5(sketchHolder, "sketchContainer");
     }
 })()
-
-
-
-
