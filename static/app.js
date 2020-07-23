@@ -108,7 +108,7 @@ const sketchHolder = (sketch) => {
 
     sketch.draw = () => {
         if (!sketch.focused) {
-            console.debug("lost focus removing mouse events")
+            // console.debug("lost focus removing mouse events")
             activeDrawingInfo = null
         }
 
