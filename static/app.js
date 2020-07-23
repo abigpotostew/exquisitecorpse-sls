@@ -15,7 +15,6 @@ const sketchHolder = (sketch) => {
     const END_STAGE = 3
 
     var stage = HEAD_STAGE
-    var p5cnv
 
     const DRAWMODE_DRAW = "Draw"
     const DRAWMODE_ERASE = "Erase"
@@ -76,10 +75,8 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.setup = () => {
-        p5cnv = sketch.createCanvas(800, 1200);
+        sketch.createCanvas(800, 1200);
         sketch.background(0);
-
-        p5cnv.touchStarted(touchStarted)
 
         loadData(sketch)
         if (stage === END_STAGE || !hasSetUsername()) {
@@ -157,7 +154,7 @@ const sketchHolder = (sketch) => {
                 drawSize *= 2
             }
             // draw upon the first time the user clicks
-            if (activeDrawingInfo.previousX !== null && sketch.movedX === 0 && sketch.movedY === 0) {
+            if (activeDrawingInfo.previousX !== undefined && sketch.movedX === 0 && sketch.movedY === 0) {
                 return
             }
 
@@ -265,15 +262,12 @@ const sketchHolder = (sketch) => {
     sketch.touchReleased = (e) => {
         activeDrawingInfo = null
     }
-    function touchStarted(e){
+    sketch.touchStarted = (e) => {
         if (stage !== END_STAGE && mouseEventOnCanvas(e)) {
             activeDrawingInfo = {previousX:null, previousY:null}
             return false
         }
     }
-    // sketch.touchStarted = (e) => {
-    //
-    // }
     sketch.touchMoved = (e) => {
         return !mouseEventOnCanvas(e)
     }
