@@ -37,6 +37,7 @@ const sketchHolder = (sketch) => {
 
     var activeDrawingInfo = null
 
+    var debugText=null
 
     function setupInstructions() {
 
@@ -101,9 +102,13 @@ const sketchHolder = (sketch) => {
         })
     };
 
+    function drawingAllowed(){
+        return stage !== END_STAGE
+    }
+
     sketch.draw = () => {
         if (!sketch.focused) {
-            console.log("lost focus removing mouse events")
+            console.debug("lost focus removing mouse events")
             activeDrawingInfo = null
         }
 
@@ -117,7 +122,7 @@ const sketchHolder = (sketch) => {
         })
         sketch.smooth()
 
-        if (stage !== END_STAGE) {
+        if (drawingAllowed()) {
             _.each(stageSections, function (i) {
                 if (stage > i) {
                     sketch.push()
@@ -138,18 +143,27 @@ const sketchHolder = (sketch) => {
         }
 
         drawMouse()
+
+        if (debugText){
+            sketch.push()
+            sketch.textSize(10);
+            sketch.fill("#000")
+            sketch.noStroke()
+            sketch.text(debugText, 10,10)
+            sketch.pop()
+        }
     };
 
     function drawMouse() {
         // user drawing logic:
-        if (stage !== END_STAGE && activeDrawingInfo !== null) {
+        if (drawingAllowed() && activeDrawingInfo !== null) {
             //do drawing
 
             let drawSize = 5
             if (drawMode === DRAWMODE_DRAW) {
                 // drawBuffer.noErase()
                 drawBuffer.push()
-                console.log("drawing stroke")
+                console.debug("drawing stroke")
                 drawBuffer.fill(0)
                 drawBuffer.stroke(0)
 
@@ -170,11 +184,16 @@ const sketchHolder = (sketch) => {
             let xy = null
             if (sketch.touches && sketch.touches.length > 0) {
                 // sketch.mouseX, sketch.mouseY
-                xy = getLocalPosition(stage, [sketch.touches[0].x, sketch.touches[0].y, sketch.touches[0].x, sketch.touches[0].y])
-                // xy = getLocalPosition(stage, [activeDrawingInfo.previousX | sketch.touches[0].x, activeDrawingInfo.previousY | sketch.touches[0].y, sketch.touches[0].x, sketch.touches[0].y])
+
+                // xy = getLocalPosition(stage, [sketch.touches[0].x, sketch.touches[0].y, sketch.touches[0].x, sketch.touches[0].y])
+                let px = activeDrawingInfo.previousX;
+                let py = activeDrawingInfo.previousY;
+                if (px===null) px = sketch.touches[0].x
+                if (py===null) py = sketch.touches[0].y
+                xy = getLocalPosition(stage, [px, py, sketch.touches[0].x, sketch.touches[0].y])
 
                 activeDrawingInfo.previousX = sketch.touches[0].x
-                activeDrawingInfo.previousY =sketch.touches[0].y
+                activeDrawingInfo.previousY = sketch.touches[0].y
             } else {
                 xy = getLocalPosition(stage, [sketch.pmouseX, sketch.pmouseY, sketch.mouseX, sketch.mouseY])
 
@@ -194,7 +213,8 @@ const sketchHolder = (sketch) => {
                 drawBuffer.noErase()
             // }
 
-
+            // debugText = xy.join(",")
+            //
             //if the original click is on the screen, prevent default!
             //todo only prevent default if the click was on the canvas
             //return false
@@ -263,33 +283,40 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.mousePressed = (e) => {
-        if (stage !== END_STAGE && mouseEventOnCanvas(e)) {
-            console.log("mouse pressed")
+        if (drawingAllowed() && mouseEventOnCanvas(e)) {
+            console.debug("mouse pressed")
             activeDrawingInfo = {previousX:null, previousY:null}
             return false
         }
     }
 
+
+
     sketch.mouseReleased = (e) => {
-        console.log('mouse released')
+        if (!drawingAllowed()) return
+        console.debug('mouse released')
         activeDrawingInfo = null
     }
     sketch.touchReleased = (e) => {
-        console.log('touch released')
+        if (!drawingAllowed()) return
+        console.debug('touch released')
         activeDrawingInfo = null
     }
     function touchStarted(e){
-        if (stage !== END_STAGE && mouseEventOnCanvas(e)) {
-            console.log("touch started canvas")
+        if (drawingAllowed() && mouseEventOnCanvas(e)) {
+            console.debug("touch started canvas")
             activeDrawingInfo = {previousX:null, previousY:null}
             return false
         }
     }
     sketch.touchStarted = (e) => {
+        if (!drawingAllowed()) return
+        console.debug("touch started")
         return touchStarted(e)
     }
     sketch.touchMoved = (e) => {
-        console.log("touch moved")
+        if (!drawingAllowed()) return
+        // console.debug("touch moved")
         return !mouseEventOnCanvas(e)
     }
 
@@ -312,7 +339,8 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.mouseDragged = (e) => {
-        console.log("mouse moved")
+        if (!drawingAllowed()) return
+        console.debug("mouse dragged")
         return !mouseEventOnCanvas(e)
     }
 
