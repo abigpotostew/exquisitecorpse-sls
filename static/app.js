@@ -147,16 +147,21 @@ const sketchHolder = (sketch) => {
         if (stage !== END_STAGE && activeDrawingInfo !== null) {
             //do drawing
 
-            drawBuffer.push()
-            // allow draw in a segment
             let drawSize = 5
             if (drawMode === DRAWMODE_DRAW) {
-                drawBuffer.noStroke()
+                // drawBuffer.noErase()
+                drawBuffer.push()
+                console.log("drawing stroke")
                 drawBuffer.fill(0)
+                drawBuffer.stroke(0)
+
+
             } else if (drawMode === DRAWMODE_ERASE) {
-                drawBuffer.noStroke()
-                drawBuffer.fill(255, 255, 255, 255)
+                console.log("drawing erase")
                 drawBuffer.erase()
+                drawBuffer.push()
+                drawBuffer.fill(0)
+                drawBuffer.stroke(0)
                 drawSize *= 2
             }
             // draw upon the first time the user clicks
@@ -166,12 +171,16 @@ const sketchHolder = (sketch) => {
 
             let xy = getLocalPosition(stage,[sketch.pmouseX, sketch.pmouseY, sketch.mouseX, sketch.mouseY])
 
-            drawBuffer.translate(-drawSize, -drawSize)
-            drawBuffer.stroke(0)//black
+            // drawBuffer.stroke(0)//black
             drawBuffer.strokeWeight(drawSize)
+            // drawBuffer.push()
+            drawBuffer.translate(-drawSize, -drawSize)
             drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
-            drawBuffer.noErase()
+
             drawBuffer.pop()
+            // if (drawMode === DRAWMODE_ERASE) {
+                drawBuffer.noErase()
+            // }
 
             activeDrawingInfo.previousX = xy[2]
             activeDrawingInfo.previousY = xy[3]
@@ -232,13 +241,13 @@ const sketchHolder = (sketch) => {
     sketch.keyReleased = (e) => {
         if (e.key === 'd' || e.key === 'D') {
             drawMode = DRAWMODE_DRAW
-            $('#drawModeDraw').removeAttribute("checked")
-            $('#drawModeErase').setAttribute("checked", "true")
+            $('#drawModeDraw')[0].setAttribute("checked", "true")
+            $('#drawModeErase')[0].removeAttribute("checked")
         }
         if (e.key === 'e' || e.key === 'E') {
             drawMode = DRAWMODE_ERASE
-            $('#drawModeDraw').removeAttribute("checked")
-            $('#drawModeErase').setAttribute("checked", "true")
+            $('#drawModeDraw')[0].removeAttribute("checked")
+            $('#drawModeErase')[0].setAttribute("checked", "true")
         }
 
     }
@@ -251,6 +260,7 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.mouseReleased = (e) => {
+        console.log('mouse released"')
         activeDrawingInfo = null
     }
 
