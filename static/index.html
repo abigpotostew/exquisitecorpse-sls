@@ -48,112 +48,84 @@
                     </div>
                 </form>
             </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Dropdown
-                </a>
-                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="#">Action</a>
-                    <a class="dropdown-item" href="#">Another action</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#">Something else here</a>
-                </div>
+            <li class="nav-item">
+                <form class="form-inline ml-3">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <button type="button" class="btn btn-success btn-secondary" id="copyShareUrlBtn">Save
+                            </button>
+                        </div>
+                        <input type="text" id="shareUrl" class="form-control"  aria-label="Share URL" placeholder="">
+                        <div class="input-group-append">
+                            <button id="shareUrlCopyBtn" class="btn btn-outline-secondary" type="button" data-clipboard-target="#shareUrl">Copy</button>
+                        </div>
+                    </div>
+                </form>
             </li>
         </ul>
-        <form class="form-inline my-2 my-lg-0">
-            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+
+
+
+        <form class="form-inline" id="usernameContainer">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <button id="openEnterUsernameModal" type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#enterUsernameModal">@</button>
+                </div>
+                <input id="usernameValueContainer" type="text" class="form-control" disabled aria-label="Text container for username" placeholder="Enter username">
+            </div>
         </form>
+
+
     </div>
 </nav>
 
 
 
 
-<h1><a href="/">Exquisite Corpse</a></h1>
+<!-- <h1><a href="/">Exquisite Corpse</a></h1> -->
 <div class="container-fluid">
     <!-- Content here -->
     <div class="row">
+        <div class="col-8">
+
+            <div id="instructions">
+                <h4>Instructions</h4>
+                <p id="stageInstructions">Enter your username by clicking the Set Username button.</p>
+            </div>
+        </div>
+    </div>
+    <div class="row">
         <div class="col" id="sketchContainer" style="min-width: 800px"></div>
         <div class="col">
-            <div class="row">
-                <div class="col-8">
-                    <!--
-                    <h4>Controls</h4>
-                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                        <label class="btn btn-secondary active">
-                            <input type="radio" name="drawMode" id="drawModeDraw" checked value="Draw">Draw
-                        </label>
-                        <label class="btn btn-secondary">
-                            <input type="radio" name="drawMode" id="drawModeErase" value="Erase">Erase
-                        </label>
-                    </div>
-                    -->
-                </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="enterUsernameModal" tabindex="-1" role="dialog"
+     aria-labelledby="enterUsernameModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="enterUsernameModalLabel">Enter Username</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-            <div class="row">
-                <div class="col-8">
-                    <hr>
-                    <div id="instructions">
-                        <h4>Instructions</h4>
-                        <p id="stageInstructions">Enter your username by clicking the Set Username button.</p>
-                    </div>
-                    <hr>
-                    <div>
-                        <input type="text" id="shareUrl">
-                        <button type="button" class="btn btn-success" id="copyShareUrlBtn">Generate Share URL and Copy
-                        </button>
-                    </div>
-                    <hr>
-                    <div id="usernameContainer">
-                        <!-- Button trigger modal -->
-                        <button id="openEnterUsernameModal" type="button" class="btn btn-primary" data-toggle="modal"
-                                data-target="#enterUsernameModal">
-                            Set Username
-                        </button>
-                        <p id="usernameValueContainer">
-                            (Missing username)
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-8">
-
-
-
-                    <!-- Modal -->
-                    <div class="modal fade" id="enterUsernameModal" tabindex="-1" role="dialog"
-                         aria-labelledby="enterUsernameModalLabel" aria-hidden="true">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="enterUsernameModalLabel">Enter Username</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="input-group mb-3">
-                                        <div class="input-group-prepend">
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
                                             <span class="input-group-text"
                                                   id="inputGroup-username-label">Username</span>
-                                        </div>
-                                        <input id="usernameEnteredText" type="text" class="form-control"
-                                               aria-label="Username" aria-describedby="inputGroup-username-label">
-                                    </div>
-
-                                </div>
-                                <div class="modal-footer">
-
-                                    <button id="saveSetUsernameBtn" type="button" class="btn btn-primary">Save</button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-
+                    <input id="usernameEnteredText" type="text" class="form-control"
+                           aria-label="Username" aria-describedby="inputGroup-username-label">
                 </div>
+
+            </div>
+            <div class="modal-footer">
+
+                <button id="saveSetUsernameBtn" type="button" class="btn btn-primary">Save</button>
             </div>
         </div>
     </div>
@@ -168,6 +140,7 @@
         integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
         crossorigin="anonymous"></script>
 <script src="/static/lib/underscore/underscore-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script>
 <script src="/static/app.js"></script>
 
 </body>

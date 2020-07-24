@@ -44,13 +44,13 @@ const sketchHolder = (sketch) => {
         let instructions = ""
         switch (stage) {
             case HEAD_STAGE:
-                instructions = "You are drawing the head in the top section. Be sure to draw hint lines for where the torso should connect in the middle section. When complete, generate a share URL and give it to the second artist.";
+                instructions = "You are drawing the head in the top section. Be sure to draw hint lines for where the torso should connect in the middle section. When complete, save and copy the share URL and give it to the second artist.";
                 break;
             case TORSO_STAGE:
-                instructions = "You are drawing the torso in the middle section. Be sure to connect your torso to the head using the hint lines given by the first artist. Similarly make sure to draw hints for where the legs should connect to your torso. When complete, generate a share URL and give it to the third artist.";
+                instructions = "You are drawing the torso in the middle section. Be sure to connect your torso to the head using the hint lines given by the first artist. Similarly make sure to draw hints for where the legs should connect to your torso. When complete, save and copy the share URL and give it to the third artist.";
                 break;
             case LEGS_STAGE:
-                instructions = "You are drawing the legs in the bottom section. Be sure to connect your legs to the torso hint lines given by the second artist. When complete, generate the final a share URL and share it with all artists. This final URL will reveal the exquisite corpse.";
+                instructions = "You are drawing the legs in the bottom section. Be sure to connect your legs to the torso hint lines given by the second artist. When complete, save and copy the final share URL and share it with all artists. This final URL will reveal the exquisite corpse.";
                 break;
             case END_STAGE:
                 instructions = "Behold! The exquisite corpse is complete. "
@@ -227,6 +227,7 @@ const sketchHolder = (sketch) => {
         }
     }
 
+
     function generateShareURL() {
         if (stage === END_STAGE) {
             return
@@ -258,14 +259,44 @@ const sketchHolder = (sketch) => {
             const myUrlWithParams = new URL(window.location.protocol + "//" + window.location.host + "/game/" + gameIdNew);
 
 
+
             var copyText = document.getElementById("shareUrl");
             copyText.value = myUrlWithParams.href;
+
+
+            var oldEditable = copyText.contenteditable
+            var oldReadonly = copyText.readonly
+            copyText.contenteditable = "true"
+            copyText.readonly = "false"
             /* Select the text field */
             copyText.select();
             copyText.setSelectionRange(0, 99999); /*For mobile devices*/
             /* Copy the text inside the text field */
+            copyText.contenteditable = oldEditable
+            copyText.readonly = oldReadonly
             document.execCommand("copy");
         });
+    }
+
+    function iosCopyToClipboard(el) {
+        var oldContentEditable = el.contentEditable,
+            oldReadOnly = el.readOnly,
+            range = document.createRange();
+
+        el.contentEditable = true;
+        el.readOnly = false;
+        range.selectNodeContents(el);
+
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(range);
+
+        el.setSelectionRange(0, 999999); // A big number, to cover anything that could be inside the element.
+
+        el.contentEditable = oldContentEditable;
+        el.readOnly = oldReadOnly;
+
+        document.execCommand('copy');
     }
 
     sketch.keyReleased = (e) => {
@@ -377,6 +408,7 @@ const sketchHolder = (sketch) => {
         }
     }
 };
+new ClipboardJS('#shareUrlCopyBtn');
 
 $("#saveSetUsernameBtn").click(function () {
     var username = $("#usernameEnteredText")[0].value
@@ -416,7 +448,7 @@ function getUsername() {
 
 if (hasSetUsername()) {
     const usernameValue = getUsername();
-    $("#usernameValueContainer")[0].innerHTML = "User: " + usernameValue
+    $("#usernameValueContainer")[0].value = "User: " + usernameValue
 }
 
 (function () {
