@@ -9,6 +9,8 @@ Features:
 - instructions improvements
     - inform people they cannot see the other sections until it is complete. (use UX to obfuscate the other drawing. Maybe blurring it??
 - Update instead of create new upon section changes after generating a url!
+- UX: loading icons
+- Gallery view
 
 Bugs:
 - [x] the img src loads after the sketch loads

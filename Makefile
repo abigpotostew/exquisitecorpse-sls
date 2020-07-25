@@ -5,7 +5,7 @@ STAGE := dev
 endif
 
 build:
-	env GOOS=linux go build -ldflags="-s -w" -o bin/client cmd/client/main.go
+	#env GOOS=linux go build -ldflags="-s -w" -o bin/client cmd/client/main.go
 	env GOOS=linux go build -ldflags="-s -w" -o bin/api cmd/api/main.go
 
 clean:

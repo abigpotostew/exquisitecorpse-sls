@@ -47,32 +47,40 @@ functions:
     role: apiExecRole
     environment:
       imageBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-images
-    events:
-      - http:
-          path: /api
-          method: ANY
-      - http:
-          path: /api/{proxy+}
-          method: ANY
-#      - http:
-#          path: /api/{proxy+}
-#          method: POST
-  client:
-    memorySize: 256
-    handler: bin/client
-    role: clientExecRole
-    environment:
       staticBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-static
+      galleryBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-gallery
     events:
       - http:
           path: /
-          method: get
+          method: ANY
       - http:
-          path: /game/{id}
-          method: get
-      - http:
-          path: /static/{proxy+}
-          method: get
+          path: /{proxy+}
+          method: ANY
+#      - http:
+#          path: /api
+#          method: ANY
+#      - http:
+#          path: /api/{proxy+}
+#          method: ANY
+#      - http:
+#          path: /api/{proxy+}
+#          method: POST
+#  client:
+#    memorySize: 256
+#    handler: bin/client
+#    role: clientExecRole
+#    environment:
+#      staticBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-static
+#    events:
+#      - http:
+#          path: /
+#          method: get
+#      - http:
+#          path: /game/{id}
+#          method: get
+#      - http:
+#          path: /static/{proxy+}
+#          method: get
 
 custom:
   config: ${file(./config/my.config.yml):${opt:stage}}

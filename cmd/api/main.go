@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/abigpotostew/exquisitecorpse-sls/internal/static"
+
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/auth"
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/segment"
 	"github.com/aws/aws-lambda-go/events"
@@ -20,7 +22,57 @@ var ginLambda *ginadapter.GinLambda
 
 const requiredImageType = "image/png"
 
-func ginHandle(service segment.Service, group *gin.RouterGroup) {
+func ginHandle(service segment.Service, staticService static.Service, group *gin.RouterGroup) {
+	group.GET("/", func(c *gin.Context) {
+		index, err := staticService.Get("index.html")
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		c.Data(200, index.ContentType, index.Data)
+	})
+
+	group.GET("/game/:id", func(c *gin.Context) {
+		index, err := staticService.Get("index.html")
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		c.Data(200, index.ContentType, index.Data)
+	})
+
+	group.GET("/gallery", func(c *gin.Context) {
+		index, err := staticService.Get("index.html")
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		c.Data(200, index.ContentType, index.Data)
+	})
+
+	group.GET("/static/*path", func(c *gin.Context) {
+		index, err := staticService.Get(c.Param("path"))
+		if err != nil {
+			log.Println(err)
+			c.AbortWithError(http.StatusInternalServerError, err)
+		}
+		c.Data(200, index.ContentType, index.Data)
+	})
+
+	group.GET("/api/v1/gallery", func(c *gin.Context) {
+		continuationToken := c.Query("continuationToken")
+		res, err := service.GetGallery(continuationToken)
+		if err != nil {
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, res)
+	})
+
 	group.GET("/api/v1/segments/:id", func(c *gin.Context) {
 		out, err := service.Get(c.Param("id"))
 		if err != nil {
@@ -107,12 +159,15 @@ func main() {
 	s3Sess := s3.New(sess)
 	service := &segment.S3Service{
 		S3: s3Sess, BucketName: os.Getenv("imageBucket"),
+		GalleryBucketName: os.Getenv("galleryBucket"),
 	}
+
+	staticService := &static.S3Service{S3: s3Sess, BucketName: os.Getenv("staticBucket")}
 
 	r := gin.Default()
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
-	ginHandle(service, authorized)
+	ginHandle(service, staticService, authorized)
 
 	ginLambda = ginadapter.New(r)
 
