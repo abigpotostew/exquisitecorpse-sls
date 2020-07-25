@@ -1,3 +1,4 @@
+//todo make this specific to the sketch so gallery can load it
 var loadedSegmentsMetadata = null
 const sketchHolder = (sketch) => {
     const imageFormat = "image/png";
