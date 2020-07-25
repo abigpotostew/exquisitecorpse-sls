@@ -17,6 +17,15 @@ Resources:
           IgnorePublicAcls: true
           BlockPublicPolicy: true
           RestrictPublicBuckets: true
+  GalleryBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:service}-${self:provider.stage}-${self:provider.region}-gallery
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
 
 # Type: AWS::S3::BucketPolicy
   #    Properties:

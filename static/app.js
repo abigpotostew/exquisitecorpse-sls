@@ -67,8 +67,11 @@ const sketchHolder = (sketch) => {
         instrBox.append('<p>' + instructions + '</p>')
 
         if (stage === END_STAGE && loadedSegmentsMetadata !== null) {
-            let creators = _.map(loadedSegmentsMetadata, function (s) {
-                return s.creator
+            // let allLoaded = _.every(_.keys(segments), function(i) {
+            //     return segments[i].loaded
+            // })
+            let creators = _.map(_.keys(loadedSegmentsMetadata), function (k) {
+                return loadedSegmentsMetadata[k].creator
             })
             creators = _.uniq(creators)
             creators = "Drawn by " + arrayToSentence(creators) + "."
@@ -386,20 +389,27 @@ const sketchHolder = (sketch) => {
         bufferHeight = Math.floor(sketch.height / 3 * surfaceScalar)
         let bufferHeightEdge = Math.floor(bufferHeight * midEdgeScalar)
         bufferHeightMid = bufferHeight + bufferHeightEdge
-
-        for (var i = 0; i < 3; ++i) {
-            let imgHolder = $("#imageDataLoader" + i)
+        let sortedSegments = _.sortBy(_.keys(loadedSegmentsMetadata), function (k) {
+            return loadedSegmentsMetadata[k].order
+        })
+        // for (var i = 0; i < 3; ++i) {
+        var i = 0
+        _.each(sortedSegments, function (key) {
+            let imgHolder = $("#imageDataLoader" + key)
             if (imgHolder.length === 0) {
-                break
+                return
             }
-            stage = i + 1
+            stage = (i) + 1
+
 
             buffers.push(sketch.createGraphics(bufferWidth, bufferHeightMid)) //todo get this height figure out
             buffers[i].clear()
 
-            let img = document.getElementById("imageDataLoader" + i)
+            let img = document.getElementById("imageDataLoader" + key)
             buffers[i].canvas.getContext("2d").drawImage(img, 0, 0, bufferWidth, bufferHeightMid)//, bufferWidth, bufferHeightMid)
-        }
+            i+=1
+
+         })
         if (stage !== END_STAGE) {
             //draw buffer
             drawBuffer = sketch.createGraphics(bufferWidth, bufferHeightMid)
@@ -435,6 +445,11 @@ function getSegmentId() {
     return null
 }
 
+function isGallery() {
+     let regGame = /^\/gallery$/;
+    return regGame.test(location.pathname)
+}
+
 function hasSetUsername() {
     return document.cookie.split(';').some((item) => item.trim().startsWith('username='))
 }
@@ -452,36 +467,63 @@ if (hasSetUsername()) {
 }
 
 (function () {
+    // if (isGallery()){
+    //     //fetch gallery segments
+    //     $.ajax({
+    //         method: "GET",
+    //         url: "/api/v1/gallery",
+    //     }).fail(function (e) {
+    //         console.error("failed to load game ", gameId)
+    //         console.error(e)
+    //     }).done(function (data) {
+    //         segments.push(data)
+    //         if (data.parent !== null && data.parent !== "") {
+    //             loadSegment(data.parent)
+    //         } else {
+    //             //set segments in the images and
+    //             segments.reverse()// head torso tail etc
+    //
+    //             loadSegmentImage(0)
+    //         }
+    //     });
+    //
+    //     return
+    // }
+
     let gameId = getSegmentId();
     if (gameId !== null) {
         //get the segments and follow parent chain up
         // fetch with username header
-        var segments = [];
+        var segments = {};
 
-        function loadSegmentImage(segmentIdx) {
-            let s = segments[segmentIdx]
-            var oReq = new XMLHttpRequest();
-            oReq.open("get", s.url, true);
-            oReq.responseType = "text";
-            oReq.onload = function (oEvent) {
+        function loadSegments() {
+            _.each(segments, function (v,key,list) {
+                let s = v
+                var oReq = new XMLHttpRequest();
+                oReq.open("get", s.url, true);
+                oReq.responseType = "text";
+                oReq.onload = function (oEvent) {
 
-                var blob = oReq.response;
-                $("body").append('<img class="hideFully" src="" id="imageDataLoader' + segmentIdx + '">')
-                let img = document.getElementById("imageDataLoader" + segmentIdx)
-                img.onload = function () {
-                    console.log("finished loading image " + segmentIdx)
-                    if (segmentIdx === segments.length - 1) {
-                        console.log("sketch ready")
-                        loadedSegmentsMetadata = segments
-                        let myp5 = new p5(sketchHolder, "sketchContainer");
-                    } else {
-                        loadSegmentImage(segmentIdx + 1)
+                    var blob = oReq.response;
+                    $("body").append('<img class="hideFully" src="" id="imageDataLoader' + key + '">')
+                    let img = document.getElementById("imageDataLoader" + key)
+                    img.onload = function () {
+                        console.log("finished loading image " + key)
+                        segments[key].loaded=true
+                        let allLoaded = _.every(_.keys(segments), function(i) {
+                            return segments[i].loaded
+                        })
+                        if (allLoaded) {
+                            console.log("sketch ready")
+                            loadedSegmentsMetadata = segments
+                            let myp5 = new p5(sketchHolder, "sketchContainer");
+                        }
                     }
-                }
-                img.src = blob
+                    img.src = blob
 
-            };
-            oReq.send(null);
+                };
+                oReq.send(null);
+            })
         }
 
         function loadSegment(segmentId) {
@@ -492,14 +534,14 @@ if (hasSetUsername()) {
                 console.error("failed to load game ", gameId)
                 console.error(e)
             }).done(function (data) {
-                segments.push(data)
+                segments[segmentId] = data
                 if (data.parent !== null && data.parent !== "") {
                     loadSegment(data.parent)
                 } else {
                     //set segments in the images and
-                    segments.reverse()// head torso tail etc
+                    // segments.reverse()// head torso tail etc
 
-                    loadSegmentImage(0)
+                    loadSegments()
                 }
             });
         }

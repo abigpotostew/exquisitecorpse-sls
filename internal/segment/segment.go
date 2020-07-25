@@ -15,9 +15,12 @@ import (
 )
 
 const (
-	parentMetadatKey  = "Parent"
-	creatorMetadatKey = "Creator"
-	orderMetadatKey   = "Order"
+	parentMetadataKey        = "Parent"
+	creatorMetadataKey       = "Creator"
+	orderMetadataKey         = "Order"
+	GalleryTypeMetadataValue = "Marker"
+	GalleryTypeMetadataKey   = "Gallery-Type"
+	COMPLETE_TORSO           = 2
 )
 
 type RequestCreateSegment struct {
@@ -37,14 +40,22 @@ type Segment struct {
 	Order       int    `json:"order"`
 }
 
+type GalleryResponse struct {
+	CompleteSegmentIds []string `json:"completeSegmentIds"`
+	ContinuationToken  *string  `json:"continuationToken"`
+	IsTruncated        bool     `json:"isTruncated"`
+}
+
 type Service interface {
 	Create(RequestCreateSegment) (Segment, error)
 	Get(id string) (Segment, error)
+	GetGallery(nextPage string) (GalleryResponse, error)
 }
 
 type S3Service struct {
-	S3         s3iface.S3API
-	BucketName string
+	S3                s3iface.S3API
+	BucketName        string
+	GalleryBucketName string
 }
 
 func (s *S3Service) Create(segment RequestCreateSegment) (Segment, error) {
@@ -66,9 +77,9 @@ func (s *S3Service) Create(segment RequestCreateSegment) (Segment, error) {
 
 	orderStr := fmt.Sprintf("%d", order)
 	metadata := map[string]*string{
-		parentMetadatKey:  &segment.Parent,
-		creatorMetadatKey: &segment.Creator,
-		orderMetadatKey:   &orderStr,
+		parentMetadataKey:  &segment.Parent,
+		creatorMetadataKey: &segment.Creator,
+		orderMetadataKey:   &orderStr,
 	}
 	_, err := s.S3.PutObject(&s3.PutObjectInput{
 		ContentType: &segment.ContentType,
@@ -80,6 +91,23 @@ func (s *S3Service) Create(segment RequestCreateSegment) (Segment, error) {
 	if err != nil {
 		log.Println("failed to save object to s3")
 		return Segment{}, err
+	}
+
+	if order == COMPLETE_TORSO {
+		typeKey := GalleryTypeMetadataValue
+		metadata := map[string]*string{
+			GalleryTypeMetadataKey: &typeKey,
+		}
+		_, err = s.S3.PutObject(&s3.PutObjectInput{
+			Key:      &id,
+			Bucket:   &s.GalleryBucketName,
+			Body:     bytes.NewReader([]byte("")),
+			Metadata: metadata,
+		})
+		if err != nil {
+			log.Println("failed to save gallery object to s3")
+			return Segment{}, err
+		}
 	}
 
 	urlStr, err := s.url(id)
@@ -114,7 +142,7 @@ func (s *S3Service) Get(id string) (out Segment, err error) {
 	if err != nil {
 		return out, err
 	}
-	order, ok := head.Metadata[orderMetadatKey]
+	order, ok := head.Metadata[orderMetadataKey]
 	orderInt := 0
 	if ok {
 		orderInt, err = strconv.Atoi(*order)
@@ -125,8 +153,8 @@ func (s *S3Service) Get(id string) (out Segment, err error) {
 
 	return Segment{
 		ID:          id,
-		Creator:     *head.Metadata[creatorMetadatKey],
-		Parent:      *head.Metadata[parentMetadatKey],
+		Creator:     *head.Metadata[creatorMetadataKey],
+		Parent:      *head.Metadata[parentMetadataKey],
 		ContentType: *head.ContentType,
 		URL:         url,
 		Order:       orderInt,
@@ -143,4 +171,31 @@ func (s *S3Service) head(id string) (out *s3.HeadObjectOutput, err error) {
 		return out, err
 	}
 	return head, err
+}
+
+func (s *S3Service) GetGallery(nextPage string) (GalleryResponse, error) {
+	var continuationToken *string
+	if nextPage != "" {
+		continuationToken = &nextPage
+	}
+	output, err := s.S3.ListObjects(&s3.ListObjectsInput{
+
+		Bucket: &s.GalleryBucketName,
+		Marker: continuationToken,
+	})
+	if err != nil {
+		log.Printf("cannot list gallery for page %v and bucket %v", continuationToken, s.GalleryBucketName)
+		return GalleryResponse{}, err
+	}
+
+	completeSegmentIds := make([]string, 0)
+	for _, v := range output.Contents {
+		completeSegmentIds = append(completeSegmentIds, *v.Key)
+	}
+
+	return GalleryResponse{
+		CompleteSegmentIds: completeSegmentIds,
+		ContinuationToken:  output.NextMarker,
+		IsTruncated:        *output.IsTruncated,
+	}, nil
 }
