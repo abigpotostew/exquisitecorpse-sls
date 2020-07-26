@@ -61,11 +61,6 @@ const sketchHolder = (sketch) => {
                 instructions = "Behold! The exquisite corpse is complete. "
         }
 
-        function arrayToSentence(arr) {
-            var last = arr.pop();
-            return arr.join(', ') + ' and ' + last;
-        }
-
         var instrBoxEl = document.getElementById("stageInstructions")
         instrBoxEl.innerText = ""; // clear it
         var instrBox = $(instrBoxEl);
@@ -419,17 +414,22 @@ const sketchHolder = (sketch) => {
     allP5s.push(thisp5)
 }
 
+
+function arrayToSentence(arr) {
+    var last = arr.pop();
+    return arr.join(', ') + ' and ' + last;
+}
+
 function getCreatorsList(loadedSegmentsMetadata){
     let creators = _.map(_.keys(loadedSegmentsMetadata), function (k) {
         return loadedSegmentsMetadata[k].creator
     })
     creators = _.uniq(creators)
     if (creators.length > 1){
-        creators = arrayToSentence(creators)
+        return arrayToSentence(creators)
     }else{
-        creators = creators[0]
+        return creators[0]
     }
-    return arrayToSentence(creators)
 }
 
 // const sketchHolder =
@@ -564,7 +564,7 @@ if (hasSetUsername()) {
 
             // var i=0
             _.each(data.completeSegmentIds, function (id) {
-                loadSegment(id, {}, containerEl)
+                loadSegment(id, {}, "sketchContainer")
             })
 
             if (data.isTruncated){
