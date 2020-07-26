@@ -1,5 +1,9 @@
 //todo make this specific to the sketch so gallery can load it
-var loadedSegmentsMetadata = null
+// var loadedSegmentsMetadata = null
+// const sketch
+// var currentp5 = null
+
+function newSketch(loadedSegmentsMetadata, w) {
 const sketchHolder = (sketch) => {
     const imageFormat = "image/png";
     const imageQuality = 1.0
@@ -214,7 +218,7 @@ const sketchHolder = (sketch) => {
 
             drawBuffer.pop()
             // if (drawMode === DRAWMODE_ERASE) {
-                drawBuffer.noErase()
+            drawBuffer.noErase()
             // }
 
             // debugText = xy.join(",")
@@ -410,7 +414,7 @@ const sketchHolder = (sketch) => {
             buffers[i].canvas.getContext("2d").drawImage(img, 0, 0, bufferWidth, bufferHeightMid)//, bufferWidth, bufferHeightMid)
             i+=1
 
-         })
+        })
         if (stage !== END_STAGE) {
             //draw buffer
             drawBuffer = sketch.createGraphics(bufferWidth, bufferHeightMid)
@@ -418,7 +422,11 @@ const sketchHolder = (sketch) => {
             drawBuffer.clear()
         }
     }
-};
+}
+    // if (currentp5) currentp5.remove()
+    let thisp5 = new p5(sketchHolder, "sketchContainer");
+}
+// const sketchHolder =
 new ClipboardJS('#shareUrlCopyBtn');
 
 $("#saveSetUsernameBtn").click(function () {
@@ -467,89 +475,124 @@ if (hasSetUsername()) {
     $("#usernameValueContainer")[0].value = "User: " + usernameValue
 }
 
+// function newSketch(segmentsDict) {
+//     loadedSegmentsMetadata = segments
+//     let myp5 = new p5(sketchHolder, "sketchContainer");
+// }
+
+
 (function () {
-    // if (isGallery()){
-    //     //fetch gallery segments
-    //     $.ajax({
-    //         method: "GET",
-    //         url: "/api/v1/gallery",
-    //     }).fail(function (e) {
-    //         console.error("failed to load game ", gameId)
-    //         console.error(e)
-    //     }).done(function (data) {
-    //         segments.push(data)
-    //         if (data.parent !== null && data.parent !== "") {
-    //             loadSegment(data.parent)
-    //         } else {
-    //             //set segments in the images and
-    //             segments.reverse()// head torso tail etc
-    //
-    //             loadSegmentImage(0)
-    //         }
-    //     });
-    //
-    //     return
-    // }
+
+    function loadSegments(segments) {
+        _.each(segments, function (v,key,list) {
+            let s = v
+            var oReq = new XMLHttpRequest();
+            oReq.open("get", s.url, true);
+            oReq.responseType = "text";
+            oReq.onload = function (oEvent) {
+
+                var blob = oReq.response;
+                $("body").append('<img class="hideFully" src="" id="imageDataLoader' + key + '">')
+                let img = document.getElementById("imageDataLoader" + key)
+                img.onload = function () {
+                    console.log("finished loading image " + key)
+                    segments[key].loaded=true
+                    let allLoaded = _.every(_.keys(segments), function(i) {
+                        return segments[i].loaded
+                    })
+                    if (allLoaded) {
+                        console.log("sketch ready")
+                        loadedSegmentsMetadata = segments
+                        newSketch(segments)
+                        // let myp5 = new p5(sketchHolder, "sketchContainer");
+                    }
+                }
+                img.src = blob
+
+            };
+            oReq.send(null);
+        })
+    }
+
+    //load each base64 encoded image sequentially then load into a sketch using loadSegments
+    function loadSegment(segmentId, segments) {
+        $.ajax({
+            method: "GET",
+            url: "/api/v1/segments/" + segmentId,
+        }).fail(function (e) {
+            console.error("failed to load game ", gameId)
+            console.error(e)
+        }).done(function (data) {
+            segments[segmentId] = data
+            if (data.parent !== null && data.parent !== "") {
+                loadSegment(data.parent, segments)
+            } else {
+                //set segments in the images and
+                // segments.reverse()// head torso tail etc
+
+                loadSegments(segments)
+            }
+        });
+    }
+
+    if (isGallery()){
+        //fetch gallery segments
+        $.ajax({
+            method: "GET",
+            url: "/api/v1/gallery?limit=5",
+        }).fail(function (e) {
+            console.error("failed to load game ", gameId)
+            console.error(e)
+        }).done(function (data) {
+
+            let nav = $('<nav aria-label="Gallery navigation"></nav>')
+            let pagination = $('<ul class="pagination"></ul>')
+            nav.append(pagination)
+
+            var i=0
+            _.each(data.completeSegmentIds, function (id) {
+                const segId = id
+                let link = $('<a class="page-link" href="#">'+(i+1)+'</a>');
+                link.click(function (e) {
+                    loadSegment(segId, {})
+                })
+                let li = $('<li class="page-item"></li>')
+                li.append(link)
+                pagination.append(li)
+                i++;
+            })
+
+            if (data.isTruncated){
+                //add
+            }
+
+            $("#gallery-pagination").append(nav)
+
+
+            loadSegment(data.completeSegmentIds[0], {})
+
+            // segments.push(data)
+            // if (data.parent !== null && data.parent !== "") {
+            //     loadSegment(data.parent)
+            // } else {
+            //     //set segments in the images and
+            //     segments.reverse()// head torso tail etc
+            //
+            //     loadSegmentImage(0)
+            // }
+        });
+
+        return
+    }
 
     let gameId = getSegmentId();
     if (gameId !== null) {
         //get the segments and follow parent chain up
         // fetch with username header
-        var segments = {};
-
-        function loadSegments() {
-            _.each(segments, function (v,key,list) {
-                let s = v
-                var oReq = new XMLHttpRequest();
-                oReq.open("get", s.url, true);
-                oReq.responseType = "text";
-                oReq.onload = function (oEvent) {
-
-                    var blob = oReq.response;
-                    $("body").append('<img class="hideFully" src="" id="imageDataLoader' + key + '">')
-                    let img = document.getElementById("imageDataLoader" + key)
-                    img.onload = function () {
-                        console.log("finished loading image " + key)
-                        segments[key].loaded=true
-                        let allLoaded = _.every(_.keys(segments), function(i) {
-                            return segments[i].loaded
-                        })
-                        if (allLoaded) {
-                            console.log("sketch ready")
-                            loadedSegmentsMetadata = segments
-                            let myp5 = new p5(sketchHolder, "sketchContainer");
-                        }
-                    }
-                    img.src = blob
-
-                };
-                oReq.send(null);
-            })
-        }
-
-        function loadSegment(segmentId) {
-            $.ajax({
-                method: "GET",
-                url: "/api/v1/segments/" + segmentId,
-            }).fail(function (e) {
-                console.error("failed to load game ", gameId)
-                console.error(e)
-            }).done(function (data) {
-                segments[segmentId] = data
-                if (data.parent !== null && data.parent !== "") {
-                    loadSegment(data.parent)
-                } else {
-                    //set segments in the images and
-                    // segments.reverse()// head torso tail etc
-
-                    loadSegments()
-                }
-            });
-        }
-
-        loadSegment(gameId)
+        // var segments = {};
+        loadSegment(gameId, {})
     } else {
         // new game
-        let myp5 = new p5(sketchHolder, "sketchContainer");
+        newSketch(null)
     }
 })()
