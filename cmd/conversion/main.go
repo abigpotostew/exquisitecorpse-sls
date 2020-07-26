@@ -106,5 +106,4 @@ func main() {
 	}
 
 	log.Println("done")
-
 }
