@@ -74,6 +74,7 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		}
 
 		res, err := service.GetGallery(query)
+		log.Printf("gallery out json is %+v", res)
 		if err != nil {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return

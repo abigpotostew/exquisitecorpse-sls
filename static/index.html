@@ -33,35 +33,12 @@
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-                <a class="nav-link" href="/">New Game<span class="sr-only">(current)</span></a>
+                <a class="nav-link" href="/">New<span class="sr-only">(current)</span></a>
             </li>
-            <li class="nav-item">
-                <form class="form-inline">
-                    <a class="nav-link" href="#">Controls</a>
-                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                        <label class="btn btn-secondary active">
-                            <input type="radio" name="drawMode" id="drawModeDraw" checked value="Draw">Draw
-                        </label>
-                        <label class="btn btn-secondary">
-                            <input type="radio" name="drawMode" id="drawModeErase" value="Erase">Erase
-                        </label>
-                    </div>
-                </form>
+            <li class="nav-item active">
+                <a class="nav-link" href="/gallery">Gallery<span class="sr-only">()</span></a>
             </li>
-            <li class="nav-item">
-                <form class="form-inline ml-3">
-                    <div class="input-group">
-                        <div class="input-group-prepend">
-                            <button type="button" class="btn btn-success btn-secondary" id="copyShareUrlBtn">Save
-                            </button>
-                        </div>
-                        <input type="text" id="shareUrl" class="form-control"  aria-label="Share URL" placeholder="">
-                        <div class="input-group-append">
-                            <button id="shareUrlCopyBtn" class="btn btn-secondary" type="button" data-clipboard-target="#shareUrl">Copy</button>
-                        </div>
-                    </div>
-                </form>
-            </li>
+
         </ul>
 
 
@@ -79,7 +56,36 @@
     </div>
 </nav>
 
-
+<ul class="nav navbar-light" style="background-color: #e3f2fd;">
+    <li class="nav-item">
+        <form class="form-inline">
+            <a class="nav-link" href="#">Controls</a>
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-secondary active">
+                    <input type="radio" name="drawMode" id="drawModeDraw" checked value="Draw">Draw
+                </label>
+                <label class="btn btn-secondary">
+                    <input type="radio" name="drawMode" id="drawModeErase" value="Erase">Erase
+                </label>
+            </div>
+        </form>
+    </li>
+    <li class="nav-item">
+        <form class="form-inline ml-3">
+            <a class="nav-link" href="#">Share</a>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <button type="button" class="btn btn-success btn-secondary" id="copyShareUrlBtn">Save
+                    </button>
+                </div>
+                <input type="text" id="shareUrl" class="form-control"  aria-label="Share URL" placeholder="">
+                <div class="input-group-append">
+                    <button id="shareUrlCopyBtn" class="btn btn-secondary" type="button" data-clipboard-target="#shareUrl">Copy</button>
+                </div>
+            </div>
+        </form>
+    </li>
+</ul>
 
 
 <!-- <h1><a href="/">Exquisite Corpse</a></h1> -->
@@ -104,9 +110,6 @@
     </div>
     <div class="row">
         <div class="col" id="sketchContainer" style="min-width: 800px"></div>
-        <div class="col">
-
-        </div>
     </div>
 </div>
 

@@ -198,9 +198,13 @@ func (s *S3Service) GetGallery(query GalleryQuery) (GalleryResponse, error) {
 		completeSegmentIds = append(completeSegmentIds, *v.Key)
 	}
 
+	var nextMarker *string
+	if *output.IsTruncated {
+		nextMarker = &completeSegmentIds[len(completeSegmentIds)-1]
+	}
 	return GalleryResponse{
 		CompleteSegmentIds: completeSegmentIds,
-		ContinuationToken:  output.NextMarker,
+		ContinuationToken:  nextMarker,
 		IsTruncated:        *output.IsTruncated,
 	}, nil
 }
