@@ -46,10 +46,15 @@ type GalleryResponse struct {
 	IsTruncated        bool     `json:"isTruncated"`
 }
 
+type GalleryQuery struct {
+	ContinuationToken string `form:"continuationToken"`
+	Limit             *int64 `form:"limit"`
+}
+
 type Service interface {
 	Create(RequestCreateSegment) (Segment, error)
 	Get(id string) (Segment, error)
-	GetGallery(nextPage string) (GalleryResponse, error)
+	GetGallery(query GalleryQuery) (GalleryResponse, error)
 }
 
 type S3Service struct {
@@ -173,15 +178,15 @@ func (s *S3Service) head(id string) (out *s3.HeadObjectOutput, err error) {
 	return head, err
 }
 
-func (s *S3Service) GetGallery(nextPage string) (GalleryResponse, error) {
+func (s *S3Service) GetGallery(query GalleryQuery) (GalleryResponse, error) {
 	var continuationToken *string
-	if nextPage != "" {
-		continuationToken = &nextPage
+	if query.ContinuationToken != "" {
+		continuationToken = &query.ContinuationToken
 	}
 	output, err := s.S3.ListObjects(&s3.ListObjectsInput{
-
-		Bucket: &s.GalleryBucketName,
-		Marker: continuationToken,
+		Bucket:  &s.GalleryBucketName,
+		Marker:  continuationToken,
+		MaxKeys: query.Limit,
 	})
 	if err != nil {
 		log.Printf("cannot list gallery for page %v and bucket %v", continuationToken, s.GalleryBucketName)

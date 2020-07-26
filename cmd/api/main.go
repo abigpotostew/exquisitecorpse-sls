@@ -63,8 +63,17 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	})
 
 	group.GET("/api/v1/gallery", func(c *gin.Context) {
-		continuationToken := c.Query("continuationToken")
-		res, err := service.GetGallery(continuationToken)
+		var query segment.GalleryQuery
+		if err := c.ShouldBindQuery(&query); err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+		}
+
+		if query.Limit == nil || *query.Limit == 0 {
+			var limit int64 = 10
+			query.Limit = &limit
+		}
+
+		res, err := service.GetGallery(query)
 		if err != nil {
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
