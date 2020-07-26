@@ -294,6 +294,7 @@ const sketchHolder = (sketch) => {
     }
 
     sketch.keyReleased = (e) => {
+        if (!drawingAllowed()) return
         if (e.key === 'd' || e.key === 'D') {
             drawMode = DRAWMODE_DRAW
             $('#drawModeDraw')[0].setAttribute("checked", "true")
@@ -383,7 +384,6 @@ const sketchHolder = (sketch) => {
         let sortedSegments = _.sortBy(_.keys(loadedSegmentsMetadata), function (k) {
             return loadedSegmentsMetadata[k].order
         })
-        // for (var i = 0; i < 3; ++i) {
         var i = 0
         _.each(sortedSegments, function (key) {
             let imgHolder = $("#imageDataLoader" + key)
@@ -399,6 +399,7 @@ const sketchHolder = (sketch) => {
             let img = document.getElementById("imageDataLoader" + key)
             buffers[i].canvas.getContext("2d").drawImage(img, 0, 0, bufferWidth, bufferHeightMid)//, bufferWidth, bufferHeightMid)
             i+=1
+            img.remove()
 
         })
         if (stage !== END_STAGE) {
@@ -481,11 +482,12 @@ if (hasSetUsername()) {
     $("#usernameValueContainer")[0].value = "User: " + usernameValue
 }
 
-// function newSketch(segmentsDict) {
-//     loadedSegmentsMetadata = segments
-//     let myp5 = new p5(sketchHolder, "sketchContainer");
-// }
-
+function newSketchContainerEl(){
+    let container = $("#sketchContainer")
+    let sketchContainer = $('<span></span>')
+    container.append(sketchContainer)
+    return sketchContainer[0]
+}
 
 (function () {
 
@@ -510,7 +512,6 @@ if (hasSetUsername()) {
                         console.log("sketch ready")
                         loadedSegmentsMetadata = segments
                         newSketch(segments, containerEl)
-                        // let myp5 = new p5(sketchHolder, "sketchContainer");
                     }
                 }
                 img.src = blob
@@ -531,11 +532,8 @@ if (hasSetUsername()) {
         }).done(function (data) {
             segments[segmentId] = data
             if (data.parent !== null && data.parent !== "") {
-                loadSegment(data.parent, segments)
+                loadSegment(data.parent, segments, containerEl)
             } else {
-                //set segments in the images and
-                // segments.reverse()// head torso tail etc
-
                 loadSegments(segments, containerEl)
             }
         });
@@ -555,44 +553,24 @@ if (hasSetUsername()) {
             console.error(e)
         }).done(function (data) {
 
-            //clean up prior
-            //$("#gallery-pagination")
+            // hide instructions
+            $("#instructionsContainer").addClass("hideFully")
 
             let nav = $('<nav aria-label="Gallery navigation"></nav>')
             let pagination = $('<ul class="pagination"></ul>')
             nav.append(pagination)
 
-            // var i=0
             _.each(data.completeSegmentIds, function (id) {
-                loadSegment(id, {}, "sketchContainer")
+                loadSegment(id, {}, newSketchContainerEl())
             })
 
             if (data.isTruncated){
-                // const segId = id
                 let link = $('<a class="page-link" href="/gallery?q='+data.continuationToken+'">Next</a>');
-                // link.click(function (e) {
-                //     loadGallery(data.continuationToken)
-                // })
                 let li = $('<li class="page-item"></li>')
                 li.append(link)
                 pagination.append(li)
-                // i++;
                 $("#gallery-pagination").append(nav)
             }
-
-
-
-            // loadSegment(data.completeSegmentIds[0], {})
-
-            // segments.push(data)
-            // if (data.parent !== null && data.parent !== "") {
-            //     loadSegment(data.parent)
-            // } else {
-            //     //set segments in the images and
-            //     segments.reverse()// head torso tail etc
-            //
-            //     loadSegmentImage(0)
-            // }
         });
     }
 
@@ -608,11 +586,9 @@ if (hasSetUsername()) {
     let gameId = getSegmentId();
     if (gameId !== null) {
         //get the segments and follow parent chain up
-        // fetch with username header
-        // var segments = {};
-        loadSegment(gameId, {}, "sketchContainer")
+        loadSegment(gameId, {}, newSketchContainerEl())
     } else {
         // new game
-        newSketch(null, "sketchContainer")
+        newSketch(null, newSketchContainerEl())
     }
 })()
