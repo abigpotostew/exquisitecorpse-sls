@@ -163,7 +163,6 @@ func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.API
 }
 
 func main() {
-	log.Printf("Gin cold start")
 	sess := session.Must(session.NewSession())
 	s3Sess := s3.New(sess)
 	service := &segment.S3Service{
@@ -171,14 +170,28 @@ func main() {
 		GalleryBucketName: os.Getenv("galleryBucket"),
 	}
 
-	staticService := &static.S3Service{S3: s3Sess, BucketName: os.Getenv("staticBucket")}
+	var staticService static.Service
+	if os.Getenv("LOCAL_STATIC_SERVER_DIR") != "" {
+		dir := os.Getenv("LOCAL_STATIC_SERVER_DIR")
+		staticService = &static.LocalService{RootFolder: dir}
+		log.Printf("Loaded local static service at directory %v", dir)
+	} else {
+		staticService = &static.S3Service{S3: s3Sess, BucketName: os.Getenv("staticBucket")}
+		log.Printf("Loaded S3 static service")
+	}
 
 	r := gin.Default()
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
 	ginHandle(service, staticService, authorized)
 
-	ginLambda = ginadapter.New(r)
+	if os.Getenv("LOCALHOST_PORT") != "" {
+		log.Println("Running as localhost on port 8080")
+		r.Run()
+	} else {
+		log.Println("Running as lambda")
+		ginLambda = ginadapter.New(r)
+		lambda.Start(Handler)
 
-	lambda.Start(Handler)
+	}
 }
