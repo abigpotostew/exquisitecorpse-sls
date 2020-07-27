@@ -11,6 +11,13 @@ Features:
 - Update instead of create new upon section changes after generating a url!
 - UX: loading icons
 - Gallery view
+- color
+- pen size
+
+- embed the images from s3 into the index.html file directly
+    - gallery, not sure about this part.
+
+- local fileserver for local runs
 
 Bugs:
 - [x] the img src loads after the sketch loads
