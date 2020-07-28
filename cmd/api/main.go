@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/abigpotostew/exquisitecorpse-sls/internal/httperror"
+
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/static"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/auth"
@@ -24,9 +26,18 @@ const requiredImageType = "image/png"
 
 func ginHandle(service segment.Service, staticService static.Service, group *gin.RouterGroup) {
 	group.GET("/", func(c *gin.Context) {
+		//cts, err := ioutil.ReadFile("static/index.html")
+		//if err != nil {
+		//	c.Error(err)
+		//	c.JSON(httperror.Response(err))
+		//	return
+		//}
+		//log.Printf("Finished loading local file here is first line: %v", strings.Fields(string(cts))[0])
+
 		index, err := staticService.Get("index.html")
 		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
 			return
 		}
 
@@ -36,7 +47,8 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	group.GET("/game/:id", func(c *gin.Context) {
 		index, err := staticService.Get("index.html")
 		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
 			return
 		}
 
@@ -46,7 +58,8 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	group.GET("/gallery", func(c *gin.Context) {
 		index, err := staticService.Get("index.html")
 		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
 			return
 		}
 
@@ -56,8 +69,9 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	group.GET("/static/*path", func(c *gin.Context) {
 		index, err := staticService.Get(c.Param("path"))
 		if err != nil {
-			log.Println(err)
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
+			return
 		}
 		c.Data(200, index.ContentType, index.Data)
 	})
@@ -65,7 +79,9 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	group.GET("/api/v1/gallery", func(c *gin.Context) {
 		var query segment.GalleryQuery
 		if err := c.ShouldBindQuery(&query); err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			c.Error(err)
+			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, err.Error())))
+			return
 		}
 
 		if query.Limit == nil || *query.Limit == 0 {
@@ -75,7 +91,8 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 
 		res, err := service.GetGallery(query)
 		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
 			return
 		}
 
@@ -85,7 +102,8 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	group.GET("/api/v1/segments/:id", func(c *gin.Context) {
 		out, err := service.Get(c.Param("id"))
 		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
 			return
 		}
 
@@ -95,16 +113,16 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
 
 		if c.ContentType() != requiredImageType {
-			c.AbortWithStatus(http.StatusBadRequest)
+			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "missing required content type")))
 			return
 		}
 		data, err := c.GetRawData()
 		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "cannot get content body")))
 			return
 		}
 		if !auth.HasUsername(c) {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.JSON(httperror.Response(httperror.NewWithDefaultErrorMessage(http.StatusUnauthorized)))
 			return
 		}
 
@@ -119,7 +137,8 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 
 		out, err := service.Create(createSeg)
 		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
 			return
 		}
 		c.JSON(200, out)
@@ -127,17 +146,16 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 
 	group.POST("/api/v1/segments", func(c *gin.Context) {
 		if c.ContentType() != requiredImageType {
-			log.Println("invalid content type: ", c.ContentType())
-			c.AbortWithStatus(http.StatusBadRequest)
+			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "invalid content type: "+c.ContentType())))
 			return
 		}
 		data, err := c.GetRawData()
 		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "cannot get content body")))
 			return
 		}
 		if !auth.HasUsername(c) {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.JSON(httperror.Response(httperror.NewWithDefaultErrorMessage(http.StatusUnauthorized)))
 			return
 		}
 
@@ -150,7 +168,8 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		}
 		out, err := service.Create(createSeg)
 		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
+			c.Error(err)
+			c.JSON(httperror.Response(err))
 			return
 		}
 		c.JSON(http.StatusCreated, out)

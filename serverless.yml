@@ -39,6 +39,7 @@ package:
     - ./**
   include:
     - ./bin/**
+    - ./static/**
 
 functions:
   api:
@@ -49,6 +50,7 @@ functions:
       imageBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-images
       staticBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-static
       galleryBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-gallery
+      LOCAL_STATIC_SERVER_DIR: ${self:custom.config.localStaticServerDir}
     events:
       - http:
           path: /
