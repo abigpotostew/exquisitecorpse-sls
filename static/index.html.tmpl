@@ -105,6 +105,15 @@
 
             <div id="gallery-pagination">
 
+                {{if .IsTruncated}}
+                    <nav aria-label="Gallery navigation">
+                        <ul class="pagination">
+                            <li class="page-item">
+                                <a class="page-link" href="/gallery?q={{.GalleryNextToken}}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                {{else}}  {{end}}
             </div>
         </div>
     </div>

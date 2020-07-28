@@ -33,7 +33,49 @@ type SegmentData struct {
 	Creator    string
 }
 type SingletonPageData struct {
-	Segments []SegmentData
+	Segments    []SegmentData
+	IsTruncated bool //todo find a more elegant way to skip loading the gallery pagination button
+}
+
+type GalleryPageData struct {
+	Segments         []SegmentData
+	GalleryNextToken string
+	IsTruncated      bool
+}
+
+func fetchForId(c *gin.Context, service segment.Service, segmentId string) ([]SegmentData, error) {
+	segments := make([]segment.Segment, 0)
+	currId := segmentId
+	var err error
+	var segmentLoop segment.Segment
+	for {
+		segmentLoop, err = service.GetWithData(currId)
+		if err != nil {
+			break
+		}
+		segments = append(segments, segmentLoop)
+		if segmentLoop.Parent != "" {
+			currId = segmentLoop.Parent
+		} else {
+			break
+		}
+	}
+	if err != nil {
+		c.Error(err)
+		c.JSON(httperror.Response(err))
+		return nil, err
+	}
+
+	segmentData := make([]SegmentData, len(segments))
+	for i, s := range segments {
+		segmentData[i] = SegmentData{
+			Id:         s.ID,
+			ContentSrc: template.URL(s.Data),
+			Order:      strconv.Itoa(s.Order),
+			Creator:    s.Creator,
+		}
+	}
+	return segmentData, nil
 }
 
 func ginHandle(service segment.Service, staticService static.Service, group *gin.RouterGroup) {
@@ -58,39 +100,13 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		//	c.JSON(httperror.Response(err))
 		//	return
 		//}
-		segments := make([]segment.Segment, 0)
 
-		currId := c.Param("id")
-		var err error
-		var segmentLoop segment.Segment
-		for {
-			segmentLoop, err = service.GetWithData(currId)
-			if err != nil {
-				break
-			}
-			segments = append(segments, segmentLoop)
-			if segmentLoop.Parent != "" {
-				currId = segmentLoop.Parent
-			} else {
-				break
-			}
-		}
+		segmentData, err := fetchForId(c, service, c.Param("id)"))
 		if err != nil {
 			c.Error(err)
 			c.JSON(httperror.Response(err))
 			return
 		}
-
-		segmentData := make([]SegmentData, len(segments))
-		for i, s := range segments {
-			segmentData[i] = SegmentData{
-				Id:         s.ID,
-				ContentSrc: template.URL(s.Data),
-				Order:      strconv.Itoa(s.Order),
-				Creator:    s.Creator,
-			}
-		}
-
 		data := SingletonPageData{Segments: segmentData}
 
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
@@ -99,14 +115,52 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	})
 
 	group.GET("/gallery", func(c *gin.Context) {
-		index, err := staticService.Get("index.html")
+
+		query := segment.GalleryQuery{
+			ContinuationToken: c.Query("q"),
+			Limit:             nil,
+		}
+
+		out, err := service.GetGallery(query)
 		if err != nil {
 			c.Error(err)
 			c.JSON(httperror.Response(err))
 			return
 		}
 
-		c.Data(200, index.ContentType, index.Data)
+		allSegments := make([]SegmentData, 0)
+		for _, v := range out.CompleteSegmentIds {
+			res, err := fetchForId(c, service, v)
+			if err != nil {
+				c.Error(err)
+				c.JSON(httperror.Response(err))
+				return
+			}
+			for _, v := range res {
+				allSegments = append(allSegments, v)
+			}
+		}
+
+		galleryNextToken := ""
+		if out.ContinuationToken != nil {
+			galleryNextToken = *out.ContinuationToken
+		}
+		data := GalleryPageData{
+			Segments:         allSegments,
+			GalleryNextToken: galleryNextToken,
+			IsTruncated:      out.IsTruncated,
+		}
+
+		c.HTML(http.StatusOK, "index.html.tmpl", data)
+		//
+		//index, err := staticService.Get("index.html")
+		//if err != nil {
+		//	c.Error(err)
+		//	c.JSON(httperror.Response(err))
+		//	return
+		//}
+		//
+		//c.Data(200, index.ContentType, index.Data)
 	})
 
 	group.GET("/static/*path", func(c *gin.Context) {
@@ -142,16 +196,16 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		c.JSON(http.StatusOK, res)
 	})
 
-	group.GET("/api/v1/segments/:id", func(c *gin.Context) {
-		out, err := service.Get(c.Param("id"))
-		if err != nil {
-			c.Error(err)
-			c.JSON(httperror.Response(err))
-			return
-		}
-
-		c.JSON(200, out)
-	})
+	//group.GET("/api/v1/segments/:id", func(c *gin.Context) {
+	//	out, err := service.Get(c.Param("id"))
+	//	if err != nil {
+	//		c.Error(err)
+	//		c.JSON(httperror.Response(err))
+	//		return
+	//	}
+	//
+	//	c.JSON(200, out)
+	//})
 
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
 
