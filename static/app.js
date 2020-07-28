@@ -521,6 +521,28 @@ function newSketchContainerEl(){
         })
     }
 
+    function loadSegmentsFromTemplate(containerEl) {
+        let segments = {}
+        var i = 0
+        let els = $('.imageDataLoader').sort(function(a,b) {
+            return $(a).data('order') > $(b).data('order');
+        }).each(function(){
+            let el = $(this)
+            segments[el.data("id")] = {
+                "creator": el.data("creator"),
+                "order": i++,
+            }
+        })
+        // var i = 0
+
+        // els.each(function (i, e) {
+        //     // let e = els[i]
+        //
+        //
+        //     // i++;
+        // })
+        newSketch(segments, containerEl)
+    }
     //load each base64 encoded image sequentially then load into a sketch using loadSegments
     function loadSegment(segmentId, segments, containerEl) {
         $.ajax({
@@ -586,7 +608,9 @@ function newSketchContainerEl(){
     let gameId = getSegmentId();
     if (gameId !== null) {
         //get the segments and follow parent chain up
-        loadSegment(gameId, {}, newSketchContainerEl())
+        loadSegmentsFromTemplate(newSketchContainerEl())
+
+        // loadSegment(gameId, {}, newSketchContainerEl())
     } else {
         // new game
         newSketch(null, newSketchContainerEl())

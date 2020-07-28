@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/httperror"
 
@@ -24,35 +26,76 @@ var ginLambda *ginadapter.GinLambda
 
 const requiredImageType = "image/png"
 
+type SegmentData struct {
+	Id         string
+	ContentSrc template.URL
+	Order      string
+	Creator    string
+}
+type SingletonPageData struct {
+	Segments []SegmentData
+}
+
 func ginHandle(service segment.Service, staticService static.Service, group *gin.RouterGroup) {
 	group.GET("/", func(c *gin.Context) {
-		//cts, err := ioutil.ReadFile("static/index.html")
+
+		//index, err := staticService.Get("index.html.tmpl")
 		//if err != nil {
 		//	c.Error(err)
 		//	c.JSON(httperror.Response(err))
 		//	return
 		//}
-		//log.Printf("Finished loading local file here is first line: %v", strings.Fields(string(cts))[0])
+		data := SingletonPageData{}
 
-		index, err := staticService.Get("index.html")
-		if err != nil {
-			c.Error(err)
-			c.JSON(httperror.Response(err))
-			return
-		}
-
-		c.Data(200, index.ContentType, index.Data)
+		c.HTML(http.StatusOK, "index.html.tmpl", data)
+		//c.Data(200, index.ContentType, index.Data)
 	})
 
 	group.GET("/game/:id", func(c *gin.Context) {
-		index, err := staticService.Get("index.html")
+		//index, err := staticService.Get("index.html")
+		//if err != nil {
+		//	c.Error(err)
+		//	c.JSON(httperror.Response(err))
+		//	return
+		//}
+		segments := make([]segment.Segment, 0)
+
+		currId := c.Param("id")
+		var err error
+		var segmentLoop segment.Segment
+		for {
+			segmentLoop, err = service.GetWithData(currId)
+			if err != nil {
+				break
+			}
+			segments = append(segments, segmentLoop)
+			if segmentLoop.Parent != "" {
+				currId = segmentLoop.Parent
+			} else {
+				break
+			}
+		}
 		if err != nil {
 			c.Error(err)
 			c.JSON(httperror.Response(err))
 			return
 		}
 
-		c.Data(200, index.ContentType, index.Data)
+		segmentData := make([]SegmentData, len(segments))
+		for i, s := range segments {
+			segmentData[i] = SegmentData{
+				Id:         s.ID,
+				ContentSrc: template.URL(s.Data),
+				Order:      strconv.Itoa(s.Order),
+				Creator:    s.Creator,
+			}
+		}
+
+		data := SingletonPageData{Segments: segmentData}
+
+		c.HTML(http.StatusOK, "index.html.tmpl", data)
+
+		//c.Data(200, index.ContentType, index.Data)
 	})
 
 	group.GET("/gallery", func(c *gin.Context) {
@@ -200,6 +243,7 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.LoadHTMLFiles("static/index.html.tmpl")
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
 	ginHandle(service, staticService, authorized)
