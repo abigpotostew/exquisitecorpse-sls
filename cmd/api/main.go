@@ -31,6 +31,8 @@ type SegmentData struct {
 	ContentSrc template.URL
 	Order      string
 	Creator    string
+	Parent     string
+	Group      int
 }
 type SingletonPageData struct {
 	Segments    []SegmentData
@@ -43,7 +45,7 @@ type GalleryPageData struct {
 	IsTruncated      bool
 }
 
-func fetchForId(c *gin.Context, service segment.Service, segmentId string) ([]SegmentData, error) {
+func fetchForId(c *gin.Context, service segment.Service, segmentId string, group int) ([]SegmentData, error) {
 	segments := make([]segment.Segment, 0)
 	currId := segmentId
 	var err error
@@ -73,6 +75,8 @@ func fetchForId(c *gin.Context, service segment.Service, segmentId string) ([]Se
 			ContentSrc: template.URL(s.Data),
 			Order:      strconv.Itoa(s.Order),
 			Creator:    s.Creator,
+			Parent:     s.Parent,
+			Group:      group,
 		}
 	}
 	return segmentData, nil
@@ -101,7 +105,11 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		//	return
 		//}
 
-		segmentData, err := fetchForId(c, service, c.Param("id)"))
+		if c.Param("id") == "" {
+			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "game id is empty")))
+			return
+		}
+		segmentData, err := fetchForId(c, service, c.Param("id"), 0)
 		if err != nil {
 			c.Error(err)
 			c.JSON(httperror.Response(err))
@@ -116,9 +124,10 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 
 	group.GET("/gallery", func(c *gin.Context) {
 
+		var limit int64 = 5
 		query := segment.GalleryQuery{
 			ContinuationToken: c.Query("q"),
-			Limit:             nil,
+			Limit:             &limit,
 		}
 
 		out, err := service.GetGallery(query)
@@ -129,8 +138,8 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		}
 
 		allSegments := make([]SegmentData, 0)
-		for _, v := range out.CompleteSegmentIds {
-			res, err := fetchForId(c, service, v)
+		for i, v := range out.CompleteSegmentIds {
+			res, err := fetchForId(c, service, v, i)
 			if err != nil {
 				c.Error(err)
 				c.JSON(httperror.Response(err))

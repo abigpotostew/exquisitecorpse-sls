@@ -521,28 +521,29 @@ function newSketchContainerEl(){
         })
     }
 
+    function extractDataFromImg(img){
+        let el = $(img)
+        let id = el.data("id")
+        return {
+            "parent": el.data("parent"),
+            "creator": el.data("creator"),
+            "order": parseInt(el.data("order")),
+            "id": id,
+            "sortBy": id,
+            "group": el.data("group")
+        }
+    }
+
     function loadSegmentsFromTemplate(containerEl) {
         let segments = {}
-        var i = 0
-        let els = $('.imageDataLoader').sort(function(a,b) {
-            return $(a).data('order') > $(b).data('order');
-        }).each(function(){
-            let el = $(this)
-            segments[el.data("id")] = {
-                "creator": el.data("creator"),
-                "order": i++,
-            }
-        })
         // var i = 0
-
-        // els.each(function (i, e) {
-        //     // let e = els[i]
-        //
-        //
-        //     // i++;
-        // })
+        let els = $('.imageDataLoader').each(function(){
+            let data = extractDataFromImg(this)
+            segments[data.id] = data
+        })
         newSketch(segments, containerEl)
     }
+    //deprecated
     //load each base64 encoded image sequentially then load into a sketch using loadSegments
     function loadSegment(segmentId, segments, containerEl) {
         $.ajax({
@@ -561,46 +562,42 @@ function newSketchContainerEl(){
         });
     }
 
-    function loadGallery(pageToken){
+    function loadGallery(){
+        // hide instructions
+        $("#instructionsContainer").addClass("hideFully")
 
-        let url = "/api/v1/gallery?limit=5"
-        if (pageToken){
-            url = url + "&continuationToken="+pageToken
-        }
-        $.ajax({
-            method: "GET",
-            url: url,
-        }).fail(function (e) {
-            console.error("failed to load game ", gameId)
-            console.error(e)
-        }).done(function (data) {
-
-            // hide instructions
-            $("#instructionsContainer").addClass("hideFully")
-
-            let nav = $('<nav aria-label="Gallery navigation"></nav>')
-            let pagination = $('<ul class="pagination"></ul>')
-            nav.append(pagination)
-
-            _.each(data.completeSegmentIds, function (id) {
-                loadSegment(id, {}, newSketchContainerEl())
-            })
-
-            if (data.isTruncated){
-                let link = $('<a class="page-link" href="/gallery?q='+data.continuationToken+'">Next</a>');
-                let li = $('<li class="page-item"></li>')
-                li.append(link)
-                pagination.append(li)
-                $("#gallery-pagination").append(nav)
+        let allSegments = []
+        let allSegmentsKeyId = {}
+        let completeSegmentIds = []
+        var i = 0
+        let els = $('.imageDataLoader').each(function(){
+            let data = extractDataFromImg(this)
+            allSegments.push(data)
+            allSegmentsKeyId[data.id] = data
+            if (data.order === 2){
+                completeSegmentIds.push(data.id)
             }
-        });
+        })
+        completeSegmentIds.sort(function (a,b) {
+            return a.sortBy > b.sortBy
+        })
+
+        let groupByGroup = _.groupBy(allSegments, function (s) {
+            return s.group
+        })
+
+        // ordered by sort id
+        _.each(completeSegmentIds, function (c) {
+            let segments = _.indexBy(groupByGroup[allSegmentsKeyId[c].group], function(i){
+                return i.id
+            })
+            // let segments = groupByGroup[allSegmentsKeyId[c].group]
+            newSketch(segments, newSketchContainerEl())
+        })
     }
 
     if (isGallery()){
-        //fetch gallery segments
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageToken = urlParams.get('q');
-        loadGallery(pageToken)
+        loadGallery()
 
         return
     }

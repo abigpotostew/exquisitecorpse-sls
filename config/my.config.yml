@@ -3,7 +3,7 @@ dev:
   certificate: arn:aws:acm:us-west-1:031580428391:certificate/ad7e3110-5da2-4f9e-a1a5-1a1567d5fb91
   throttleRateLimit: 40
   throttleBurstLimit: 20
-  localStaticServerDir: ""
+  localStaticServerDir: "static"
 
 prod:
   domain: https://playexquisitecorpse.com
