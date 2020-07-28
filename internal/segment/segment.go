@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"strconv"
 	"time"
@@ -36,8 +37,9 @@ type Segment struct {
 	Creator     string `json:"creator"`
 	Parent      string `json:"parent"`
 	ContentType string `json:"contentType"`
-	URL         string `json:"url"`
-	Order       int    `json:"order"`
+	//URL         string `json:"url"`
+	Order int `json:"order"`
+	Data  []byte
 }
 
 type GalleryResponse struct {
@@ -54,6 +56,7 @@ type GalleryQuery struct {
 type Service interface {
 	Create(RequestCreateSegment) (Segment, error)
 	Get(id string) (Segment, error)
+	GetWithData(id string) (Segment, error)
 	GetGallery(query GalleryQuery) (GalleryResponse, error)
 }
 
@@ -74,7 +77,7 @@ func (s *S3Service) Create(segment RequestCreateSegment) (Segment, error) {
 		if err != nil {
 			return Segment{}, err
 		}
-		if parent == (Segment{}) {
+		if parent.ID == "" {
 			return Segment{}, errors.New("404 todo parent not found")
 		}
 		order = parent.Order + 1
@@ -115,17 +118,17 @@ func (s *S3Service) Create(segment RequestCreateSegment) (Segment, error) {
 		}
 	}
 
-	urlStr, err := s.url(id)
-	if err != nil {
-		log.Println("failed to pre-sign url")
-		return Segment{}, err
-	}
+	//urlStr, err := s.url(id)
+	//if err != nil {
+	//	log.Println("failed to pre-sign url")
+	//	return Segment{}, err
+	//}
 
 	return Segment{
-		ID:          id,
-		Creator:     segment.Creator,
-		Parent:      segment.Parent,
-		URL:         urlStr,
+		ID:      id,
+		Creator: segment.Creator,
+		Parent:  segment.Parent,
+		//URL:         urlStr,
 		ContentType: segment.ContentType,
 	}, nil
 }
@@ -138,12 +141,23 @@ func (s *S3Service) url(id string) (string, error) {
 	return inputPresigned.Presign(5 * time.Minute)
 }
 
+func (s *S3Service) contents(id string) ([]byte, error) {
+	obj, err := s.S3.GetObject(&s3.GetObjectInput{
+		Bucket: &s.BucketName,
+		Key:    &id,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.ReadAll(obj.Body)
+}
+
 func (s *S3Service) Get(id string) (out Segment, err error) {
 	head, err := s.head(id)
 	if err != nil {
 		return out, err
 	}
-	url, err := s.url(id)
+	objData, err := s.contents(id)
 	if err != nil {
 		return out, err
 	}
@@ -161,8 +175,70 @@ func (s *S3Service) Get(id string) (out Segment, err error) {
 		Creator:     *head.Metadata[creatorMetadataKey],
 		Parent:      *head.Metadata[parentMetadataKey],
 		ContentType: *head.ContentType,
-		URL:         url,
-		Order:       orderInt,
+		//URL:         url,
+		Data:  objData,
+		Order: orderInt,
+	}, nil
+}
+
+func (s *S3Service) GetWithData(id string) (out Segment, err error) {
+	head, err := s.head(id)
+	if err != nil {
+		return out, err
+	}
+	objData, err := s.contents(id)
+	if err != nil {
+		return out, err
+	}
+	order, ok := head.Metadata[orderMetadataKey]
+	orderInt := 0
+	if ok {
+		orderInt, err = strconv.Atoi(*order)
+		if err != nil {
+			return Segment{}, err
+		}
+	}
+
+	return Segment{
+		ID:          id,
+		Creator:     *head.Metadata[creatorMetadataKey],
+		Parent:      *head.Metadata[parentMetadataKey],
+		ContentType: *head.ContentType,
+		//URL:         url,
+		Data:  objData,
+		Order: orderInt,
+	}, nil
+}
+
+func (s *S3Service) get(id string, includeData bool) (out Segment, err error) {
+	head, err := s.head(id)
+	if err != nil {
+		return out, err
+	}
+	var objData []byte
+	if includeData {
+		objData, err = s.contents(id)
+		if err != nil {
+			return out, err
+		}
+	}
+	order, ok := head.Metadata[orderMetadataKey]
+	orderInt := 0
+	if ok {
+		orderInt, err = strconv.Atoi(*order)
+		if err != nil {
+			return Segment{}, err
+		}
+	}
+
+	return Segment{
+		ID:          id,
+		Creator:     *head.Metadata[creatorMetadataKey],
+		Parent:      *head.Metadata[parentMetadataKey],
+		ContentType: *head.ContentType,
+		//URL:         url,
+		Data:  objData,
+		Order: orderInt,
 	}, nil
 }
 
