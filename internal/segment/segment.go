@@ -49,8 +49,8 @@ type GalleryResponse struct {
 }
 
 type GalleryQuery struct {
-	ContinuationToken string `form:"continuationToken"`
-	Limit             *int64 `form:"limit"`
+	ContinuationToken string `form:"q"`
+	Limit             *int64
 }
 
 type Service interface {
