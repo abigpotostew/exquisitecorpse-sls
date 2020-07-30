@@ -83,28 +83,21 @@ func fetchForId(c *gin.Context, service segment.Service, segmentId string, group
 }
 
 func ginHandle(service segment.Service, staticService static.Service, group *gin.RouterGroup) {
+
+	staticFs := http.Dir("static")
+
 	group.GET("/", func(c *gin.Context) {
-
-		//index, err := staticService.Get("index.html.tmpl")
-		//if err != nil {
-		//	c.Error(err)
-		//	c.JSON(httperror.Response(err))
-		//	return
-		//}
 		data := SingletonPageData{}
-
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
-		//c.Data(200, index.ContentType, index.Data)
+	})
+
+	group.GET("/robots.txt", func(c *gin.Context) {
+		c.FileFromFS("robots.txt", staticFs)
+
+		//c.File("static/robots.txt")
 	})
 
 	group.GET("/game/:id", func(c *gin.Context) {
-		//index, err := staticService.Get("index.html")
-		//if err != nil {
-		//	c.Error(err)
-		//	c.JSON(httperror.Response(err))
-		//	return
-		//}
-
 		if c.Param("id") == "" {
 			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "game id is empty")))
 			return
@@ -118,8 +111,6 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		data := SingletonPageData{Segments: segmentData}
 
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
-
-		//c.Data(200, index.ContentType, index.Data)
 	})
 
 	group.GET("/gallery", func(c *gin.Context) {
@@ -161,61 +152,11 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		}
 
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
-		//
-		//index, err := staticService.Get("index.html")
-		//if err != nil {
-		//	c.Error(err)
-		//	c.JSON(httperror.Response(err))
-		//	return
-		//}
-		//
-		//c.Data(200, index.ContentType, index.Data)
 	})
 
 	group.GET("/static/*path", func(c *gin.Context) {
-		index, err := staticService.Get(c.Param("path"))
-		if err != nil {
-			c.Error(err)
-			c.JSON(httperror.Response(err))
-			return
-		}
-		c.Data(200, index.ContentType, index.Data)
+		c.FileFromFS(c.Param("path"), staticFs)
 	})
-
-	// deprecated by the index fulfillment.
-	//group.GET("/api/v1/gallery", func(c *gin.Context) {
-	//	var query segment.GalleryQuery
-	//	if err := c.ShouldBindQuery(&query); err != nil {
-	//		c.Error(err)
-	//		c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, err.Error())))
-	//		return
-	//	}
-	//
-	//	if query.Limit == nil || *query.Limit == 0 {
-	//		var limit int64 = 10
-	//		query.Limit = &limit
-	//	}
-	//
-	//	res, err := service.GetGallery(query)
-	//	if err != nil {
-	//		c.Error(err)
-	//		c.JSON(httperror.Response(err))
-	//		return
-	//	}
-	//
-	//	c.JSON(http.StatusOK, res)
-	//})
-
-	//group.GET("/api/v1/segments/:id", func(c *gin.Context) {
-	//	out, err := service.Get(c.Param("id"))
-	//	if err != nil {
-	//		c.Error(err)
-	//		c.JSON(httperror.Response(err))
-	//		return
-	//	}
-	//
-	//	c.JSON(200, out)
-	//})
 
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
 
@@ -311,7 +252,6 @@ func main() {
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
 	ginHandle(service, staticService, authorized)
-
 	if os.Getenv("LOCALHOST_PORT") != "" {
 		log.Println("Running as localhost on port 8080")
 		r.Run()
@@ -319,6 +259,5 @@ func main() {
 		log.Println("Running as lambda")
 		ginLambda = ginadapter.New(r)
 		lambda.Start(Handler)
-
 	}
 }
