@@ -47,29 +47,37 @@ const sketchHolder = (sketch) => {
     function setupInstructions() {
 
         let instructions = ""
-        switch (stage) {
-            case HEAD_STAGE:
-                instructions = "You are drawing the head in the top section. Be sure to draw hint lines for where the torso should connect in the middle section. When complete, save and copy the share URL and give it to the second artist.";
-                break;
-            case TORSO_STAGE:
-                instructions = "You are drawing the torso in the middle section. Be sure to connect your torso to the head using the hint lines given by the first artist. Similarly make sure to draw hints for where the legs should connect to your torso. When complete, save and copy the share URL and give it to the third artist.";
-                break;
-            case LEGS_STAGE:
-                instructions = "You are drawing the legs in the bottom section. Be sure to connect your legs to the torso hint lines given by the second artist. When complete, save and copy the final share URL and share it with all artists. This final URL will reveal the exquisite corpse.";
-                break;
-            case END_STAGE:
-                instructions = "Behold! The exquisite corpse is complete. "
+        if (hasSetUsername()) {
+            switch (stage) {
+                case HEAD_STAGE:
+                    instructions = "You are drawing the head in the top section. Be sure to draw hint lines for where the torso should connect in the middle section. When complete, save and copy the share URL and give it to the second artist.";
+                    break;
+                case TORSO_STAGE:
+                    instructions = "You are drawing the torso in the middle section. Be sure to connect your torso to the head using the hint lines given by the first artist. Similarly make sure to draw hints for where the legs should connect to your torso. When complete, save and copy the share URL and give it to the third artist.";
+                    break;
+                case LEGS_STAGE:
+                    instructions = "You are drawing the legs in the bottom section. Be sure to connect your legs to the torso hint lines given by the second artist. When complete, save and copy the final share URL and share it with all artists. This final URL will reveal the exquisite corpse.";
+                    break;
+                case END_STAGE:
+                    instructions = "Behold! The exquisite corpse is complete. "
+            }
+
+            var instrBoxEl = document.getElementById("stageInstructions")
+            instrBoxEl.innerText = ""; // clear it
+            var instrBox = $(instrBoxEl);
+            instrBox.append('<p>' + instructions + '</p>')
+
+            if (stage === END_STAGE && loadedSegmentsMetadata !== null) {
+                let creatorsSentence = "Drawn by " + getCreatorsList(loadedSegmentsMetadata) + "."
+                $(instrBox).append('<p>' + creatorsSentence + '</p>')
+            }
+        }else{
+           //skip
         }
 
-        var instrBoxEl = document.getElementById("stageInstructions")
-        instrBoxEl.innerText = ""; // clear it
-        var instrBox = $(instrBoxEl);
-        instrBox.append('<p>' + instructions + '</p>')
 
-        if (stage === END_STAGE && loadedSegmentsMetadata !== null) {
-            let creatorsSentence = "Drawn by " + getCreatorsList(loadedSegmentsMetadata) + "."
-            $(instrBox).append('<p>' + creatorsSentence + '</p>')
-        }
+
+
     }
 
     sketch.setup = () => {
@@ -98,6 +106,56 @@ const sketchHolder = (sketch) => {
 
     function drawingAllowed(){
         return stage !== END_STAGE
+    }
+
+    function dashedLine(sketch, x1, y1, x2, y2, l, g) {
+        var pc = sketch.dist(x1, y1, x2, y2) / 100;
+        var pcCount = 1;
+        var lPercent = gPercent = 0;
+        var currentPos = 0;
+        var xx1 = yy1 = xx2 = yy2 = 0;
+
+        while (sketch.int(pcCount * pc) < l) {
+            pcCount++
+        }
+        lPercent = pcCount;
+        pcCount = 1;
+        while (sketch.int(pcCount * pc) < g) {
+            pcCount++
+        }
+        gPercent = pcCount;
+
+        lPercent = lPercent / 100;
+        gPercent = gPercent / 100;
+        while (currentPos < 1) {
+            xx1 = sketch.lerp(x1, x2, currentPos);
+            yy1 = sketch.lerp(y1, y2, currentPos);
+            xx2 = sketch.lerp(x1, x2, currentPos + lPercent);
+            yy2 = sketch.lerp(y1, y2, currentPos + lPercent);
+            if (x1 > x2) {
+                if (xx2 < x2) {
+                    xx2 = x2;
+                }
+            }
+            if (x1 < x2) {
+                if (xx2 > x2) {
+                    xx2 = x2;
+                }
+            }
+            if (y1 > y2) {
+                if (yy2 < y2) {
+                    yy2 = y2;
+                }
+            }
+            if (y1 < y2) {
+                if (yy2 > y2) {
+                    yy2 = y2;
+                }
+            }
+
+            sketch.line(xx1, yy1, xx2, yy2);
+            currentPos = currentPos + lPercent + gPercent;
+        }
     }
 
     sketch.draw = () => {
@@ -130,9 +188,18 @@ const sketchHolder = (sketch) => {
                 }
 
 
-                sketch.stroke(0, 0, 255)
-                sketch.strokeWeight(2)
-                sketch.line(0, sectionHeight * i, sketch.width, sectionHeight * i)
+                if (i!=0) {
+                    sketch.stroke(0, 0, 255)
+                    sketch.strokeWeight(2)
+                    // sketch.line(0, sectionHeight * i, sketch.width, sectionHeight * i)
+                    dashedLine(sketch, 0, sectionHeight * i, sketch.width, sectionHeight * i)
+                    if (stage+1===i){
+                        sketch.noStroke()
+                        sketch.fill(0,0,255)
+                        sketch.textSize(12)
+                        sketch.text("Draw hint lines below this line", 3, 12+2+sectionHeight * i)
+                    }
+                }
             })
         }
 
@@ -342,8 +409,12 @@ const sketchHolder = (sketch) => {
     }
     sketch.touchMoved = (e) => {
         if (!drawingAllowed()) return
+        let on = mouseEventOnCanvas(e)
+        if(on && sketch.touches && sketch.touches.length>1){
+            return false
+        }
         // console.debug("touch moved")
-        return !mouseEventOnCanvas(e)
+        return !on
     }
 
     function getLocalPosition(i, se) {
