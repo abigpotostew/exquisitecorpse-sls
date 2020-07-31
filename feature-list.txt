@@ -23,3 +23,6 @@ Bugs:
 - [x] the img src loads after the sketch loads
 - Can draw when the cursor is off screen to right on first segment.
     - bigger since it draws a huge line across screen when you go off screen.
+
+UX:
+- enter username prompt or more clear
