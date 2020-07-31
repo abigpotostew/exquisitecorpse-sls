@@ -1,7 +1,3 @@
-//todo make this specific to the sketch so gallery can load it
-// var loadedSegmentsMetadata = null
-// const sketch
- var currentp5 = null
 var allP5s = []
 function newSketch(loadedSegmentsMetadata, containerEl) {
 const sketchHolder = (sketch) => {
@@ -71,13 +67,8 @@ const sketchHolder = (sketch) => {
                 let creatorsSentence = "Drawn by " + getCreatorsList(loadedSegmentsMetadata) + "."
                 $(instrBox).append('<p>' + creatorsSentence + '</p>')
             }
-        }else{
-           //skip
         }
-
-
-
-
+        // is missing username, default instructions notify user
     }
 
     sketch.setup = () => {
@@ -89,7 +80,9 @@ const sketchHolder = (sketch) => {
             sketch.noLoop()
         }
 
-        setupInstructions()
+        if (hasSetUsername() && !isGallery()){
+            setupInstructions()
+        }
 
         $("#copyShareUrlBtn").click(function () {
             generateShareURL();
@@ -187,7 +180,6 @@ const sketchHolder = (sketch) => {
                     sketch.pop()
                 }
 
-
                 if (i!=0) {
                     sketch.stroke(0, 0, 255)
                     sketch.strokeWeight(2)
@@ -219,7 +211,6 @@ const sketchHolder = (sketch) => {
         // user drawing logic:
         if (drawingAllowed() && activeDrawingInfo !== null) {
             //do drawing
-
             let drawSize = 5
             if (drawMode === DRAWMODE_DRAW) {
                 // drawBuffer.noErase()
@@ -262,23 +253,12 @@ const sketchHolder = (sketch) => {
                 activeDrawingInfo.previousY = sketch.mouseY
             }
 
-
-            // drawBuffer.stroke(0)//black
             drawBuffer.strokeWeight(drawSize)
-            // drawBuffer.push()
             drawBuffer.translate(-drawSize, -drawSize)
             drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
 
             drawBuffer.pop()
-            // if (drawMode === DRAWMODE_ERASE) {
             drawBuffer.noErase()
-            // }
-
-            // debugText = xy.join(",")
-            //
-            //if the original click is on the screen, prevent default!
-            //todo only prevent default if the click was on the canvas
-            //return false
         }
     }
 
@@ -537,6 +517,11 @@ function isGallery() {
     return regGame.test(location.pathname)
 }
 
+function isAbout() {
+    let regGame = /^\/about$/;
+    return regGame.test(location.pathname)
+}
+
 function hasSetUsername() {
     return document.cookie.split(';').some((item) => item.trim().startsWith('username='))
 }
@@ -635,7 +620,7 @@ function newSketchContainerEl(){
 
     function loadGallery(){
         // hide instructions
-        $("#instructionsContainer").addClass("hideFully")
+        // $("#instructionsContainer").addClass("hideFully")
 
         let allSegments = []
         let allSegmentsKeyId = {}
@@ -669,7 +654,10 @@ function newSketchContainerEl(){
 
     if (isGallery()){
         loadGallery()
+        return
+    }
 
+    if (isAbout()){
         return
     }
 
@@ -677,8 +665,6 @@ function newSketchContainerEl(){
     if (gameId !== null) {
         //get the segments and follow parent chain up
         loadSegmentsFromTemplate(newSketchContainerEl())
-
-        // loadSegment(gameId, {}, newSketchContainerEl())
     } else {
         // new game
         newSketch(null, newSketchContainerEl())

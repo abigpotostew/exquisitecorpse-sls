@@ -1,0 +1,14 @@
+dev:
+  domain: https://playexquisitecorpse-dev.com
+  certificate: arn:aws:acm:us-west-1:031580428391:certificate/ad7e3110-5da2-4f9e-a1a5-1a1567d5fb91
+  throttleRateLimit: 40
+  throttleBurstLimit: 20
+  localStaticServerDir: "static"
+
+prod:
+  domain: https://playexquisitecorpse.com
+  certificate: arn:aws:acm:us-west-1:031580428391:certificate/57559b18-b946-4e89-9a8d-1283477d72bc
+  throttleRateLimit: 100
+  throttleBurstLimit: 50
+  localStaticServerDir: "static"
+

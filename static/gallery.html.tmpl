@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+{{template "head" .}}
+<body>
+
+{{template "navbar" .}}
+
+{{define "gallery-nav"}}
+    <div class="row">
+        <div class="col-8 mt-3">
+            <div id="gallery-pagination-top">
+                {{if .IsTruncated}}
+                    <nav aria-label="Gallery navigation">
+                        <ul class="pagination">
+                            <li class="page-item">
+                                <a class="page-link" href="/gallery?q={{.GalleryNextToken}}">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                {{else}}  {{end}}
+            </div>
+        </div>
+    </div>
+{{end}}
+
+<div class="container-fluid">
+    <!-- Content here -->
+
+    {{template "gallery-nav" .}}
+    {{template "sketchContainer" .}}
+    {{template "gallery-nav" .}}
+</div>
+
+
+{{range .Segments}}
+    <img class="hideFully imageDataLoader" src="{{.ContentSrc}}" id="imageDataLoader{{.Id}}" data-id="{{.Id}}" data-order="{{.Order}}" data-creator="{{.Creator}}" data-parent="{{.Parent}}" data-group="{{.Group}}">
+{{end}}
+
+{{template "scripts"}}
+
+</body>
+</html>

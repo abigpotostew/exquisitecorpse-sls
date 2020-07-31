@@ -35,11 +35,12 @@ provider:
   versionFunctions: false
 
 package:
-  exclude:
-    - ./**
-  include:
-    - ./bin/**
-    - ./static/**
+  artifact: build/package.zip
+#  exclude:
+#    - ./**
+#  include:
+#    - ./bin/**
+#    - ./static/**
 
 functions:
   api:
