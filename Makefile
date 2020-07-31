@@ -10,8 +10,13 @@ build:
 
 clean:
 	rm -rf ./bin
+	rm -rf ./build
 
-deploy: clean build
+package:
+	mkdir -p build
+	zip build/package.zip -r static -r bin -x \*.DS_Store
+
+deploy: clean build package
 	sls deploy --verbose --stage $(STAGE)
 
 deployClient:

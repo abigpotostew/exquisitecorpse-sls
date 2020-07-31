@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/httperror"
 
@@ -35,15 +34,21 @@ type SegmentData struct {
 	Parent     string
 	Group      int
 }
-type SingletonPageData struct {
-	Segments    []SegmentData
-	IsTruncated bool //todo find a more elegant way to skip loading the gallery pagination button
+
+type HomePageData struct {
+	Segments []SegmentData
+	Title    string
+}
+
+type AboutPageData struct {
+	Title string
 }
 
 type GalleryPageData struct {
 	Segments         []SegmentData
 	GalleryNextToken string
 	IsTruncated      bool
+	Title            string
 }
 
 func fetchForId(c *gin.Context, service segment.Service, segmentId string, group int) ([]SegmentData, error) {
@@ -88,7 +93,7 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	staticFs := http.Dir("static")
 
 	group.GET("/", func(c *gin.Context) {
-		data := SingletonPageData{}
+		data := HomePageData{}
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
 	})
 
@@ -109,9 +114,14 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 			c.JSON(httperror.Response(err))
 			return
 		}
-		data := SingletonPageData{Segments: segmentData}
+		data := HomePageData{Segments: segmentData, Title: ""}
 
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
+	})
+
+	group.GET("/about", func(c *gin.Context) {
+		data := AboutPageData{Title: "About - "}
+		c.HTML(http.StatusOK, "about.html.tmpl", data)
 	})
 
 	group.GET("/gallery", func(c *gin.Context) {
@@ -150,14 +160,15 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 			Segments:         allSegments,
 			GalleryNextToken: galleryNextToken,
 			IsTruncated:      out.IsTruncated,
+			Title:            "Gallery - ",
 		}
 
-		c.HTML(http.StatusOK, "index.html.tmpl", data)
+		c.HTML(http.StatusOK, "gallery.html.tmpl", data)
 	})
 
 	group.GET("/static/*path", func(c *gin.Context) {
 		c.FileFromFS(c.Param("path"), staticFs)
-		c.Header("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+		//c.Header("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
 	})
 
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
@@ -250,7 +261,8 @@ func main() {
 	}
 
 	r := gin.Default()
-	r.LoadHTMLFiles("static/index.html.tmpl")
+	//r.LoadHTMLFiles("static/index.html.tmpl")
+	r.LoadHTMLFiles("static/common.html.tmpl", "static/gallery.html.tmpl", "static/about.html.tmpl", "static/index.html.tmpl")
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
 	ginHandle(service, staticService, authorized)

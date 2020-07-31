@@ -13,6 +13,7 @@ Features:
 - Gallery view
 - color
 - pen size
+- prevent save if nothing new was drawn since last save
 
 - embed the images from s3 into the index.html file directly
     - gallery, not sure about this part.
