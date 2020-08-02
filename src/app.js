@@ -1,3 +1,5 @@
+import * as _ from 'lodash';
+
 var allP5s = []
 function newSketch(loadedSegmentsMetadata, containerEl) {
 const sketchHolder = (sketch) => {
