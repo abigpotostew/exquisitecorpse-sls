@@ -65,6 +65,14 @@ const sketchHolder = (sketch) => {
             var instrBox = $(instrBoxEl);
             instrBox.append('<p>' + instructions + '</p>')
 
+            let isMobile = window.matchMedia("only screen and (max-width: 760px)").matches;
+
+            if (isMobile) {
+                //Conditional script here
+                var mobile = "For the best mobile experience use landscape orientation."
+                instrBox.append('<p>' + mobile + '</p>')
+            }
+
             if (stage === END_STAGE && loadedSegmentsMetadata !== null) {
                 let creatorsSentence = "Drawn by " + getCreatorsList(loadedSegmentsMetadata) + "."
                 $(instrBox).append('<p>' + creatorsSentence + '</p>')
@@ -73,11 +81,37 @@ const sketchHolder = (sketch) => {
         // is missing username, default instructions notify user
     }
 
+    function Unload(){
+        for(var i=0;i<buffers.length;++i){
+            buffers[i].remove()
+            buffers[i].canvas.height=0
+            buffers[i].canvas.width=0
+        }
+        buffers = []
+        sketch.remove()
+        sketch.canvas.height=0
+        sketch.canvas.width=0
+        console.log("removed buffers and sketch")
+    }
+
     sketch.setup = () => {
         p5cnv = sketch.createCanvas(800, 1200);
         sketch.background(0);
 
         loadData(sketch)
+
+        $(window).on("unload", function(e) {
+            Unload(e)
+        });
+
+        $(document.body).on("unload", function(e){
+            Unload(e)
+        })
+
+        $("a").on("click", function (e) {
+            Unload(e)
+        })
+
         if (stage === END_STAGE || !hasSetUsername()) {
             sketch.noLoop()
         }
@@ -207,6 +241,15 @@ const sketchHolder = (sketch) => {
             sketch.text(debugText, 10,10)
             sketch.pop()
         }
+
+        // if (!drawingAllowed()){
+        //     //remove all buffers to free memory
+        //     _.each(buffers, function (buffer) {
+        //         buffer.remove()
+        //     })
+        //     console.log("cleared buffers")
+        //     buffers = null
+        // }
     };
 
     function drawMouse() {
@@ -393,10 +436,12 @@ const sketchHolder = (sketch) => {
         if (!drawingAllowed()) return
         let on = mouseEventOnCanvas(e)
         if(on && sketch.touches && sketch.touches.length>1){
-            return false
+            // console.log("multiple touches allowing zooming default")
+            activeDrawingInfo = null
+            return true// allow default and don't allow drawing
+        }else {
+            return !on
         }
-        // console.debug("touch moved")
-        return !on
     }
 
     function getLocalPosition(i, se) {
@@ -653,6 +698,10 @@ function newSketchContainerEl(){
             newSketch(segments, newSketchContainerEl())
         })
     }
+
+    $(document).on("pagehide","#page2",function() {
+        alert("The pagehide event has been fired and second page is hidden now.");
+    });
 
     if (isGallery()){
         loadGallery()
