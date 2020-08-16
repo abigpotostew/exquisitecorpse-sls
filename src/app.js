@@ -560,7 +560,7 @@ function getSegmentId() {
 }
 
 function isGallery() {
-     let regGame = /^\/gallery$/;
+    let regGame = /^\/gallery$/;
     return regGame.test(location.pathname)
 }
 
