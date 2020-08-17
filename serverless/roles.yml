@@ -64,16 +64,16 @@ Resources:
                      - - "arn:aws:s3:::"
                        - "Ref" : "GalleryBucket"
                        - "/*"
-              -  Effect: "Allow"
-                 Action:
-                   - "s3:GetObject*"
-                   - "s3:ListObject*"
-                 Resource:
-                   Fn::Join:
-                     - ""
-                     - - "arn:aws:s3:::"
-                       - "Ref" : "StaticBucket"
-                       - "/*"
+#              -  Effect: "Allow"
+#                 Action:
+#                   - "s3:GetObject*"
+#                   - "s3:ListObject*"
+#                 Resource:
+#                   Fn::Join:
+#                     - ""
+#                     - - "arn:aws:s3:::"
+#                       - "Ref" : "StaticBucket"
+#                       - "/*"
               - Effect: "Allow"
                 Action:
                   - "s3:*"

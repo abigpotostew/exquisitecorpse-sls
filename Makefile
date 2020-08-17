@@ -14,7 +14,7 @@ clean:
 
 package:
 	mkdir -p build
-	zip build/package.zip -r static -r bin -x \*.DS_Store
+	zip build/package.zip -r dist -r bin -x \*.DS_Store
 
 deploy: clean build package
 	sls deploy --verbose --stage $(STAGE)
