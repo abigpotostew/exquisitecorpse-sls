@@ -226,7 +226,7 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
                 generateShareURL();
             })
 
-            $('input:radio[name="drawMode"]').change(function () {
+            $('input:radio[name="drawMode"]').on("change",function () {
                 let thi = this as HTMLInputElement
                 if (thi.checked && thi.value === DRAWMODE_DRAW) {
                     drawMode = DRAWMODE_DRAW
@@ -234,6 +234,8 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
                     drawMode = DRAWMODE_ERASE
                 }
             })
+
+
         };
 
         function drawingAllowed() {
