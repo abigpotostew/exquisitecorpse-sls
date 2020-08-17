@@ -355,8 +355,10 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
                 // _.each(buffers, function (buffer) {
                 //     buffer.remove()
                 // })
-                // console.log("cleared buffers")
                 // buffers = null
+                // console.log("cleared buffers")
+                //todo why doesn't this work!?
+                // unloadBuffers(buffers)
                 for (var i = 0; i < buffers.length; ++i) {
                     buffers[i].remove()
                     // @ts-ignore
