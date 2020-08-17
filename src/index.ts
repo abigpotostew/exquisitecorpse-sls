@@ -15,6 +15,7 @@ function pathTest(page :PageNames):boolean{
 class ActiveDrawInfo {
     previousX: number
     previousY: number
+    yo:string
 
     constructor(previousX: number, previousY: number) {
         this.previousX = previousX;
@@ -61,6 +62,12 @@ class MyP5 extends p5 {
     keyReleased = (event?: object): void => {};
     touchReleased = (event?: object): void => {};
 }
+
+
+function hasSetUsername():boolean {
+    return document.cookie.split(';').some((item) => item.trim().startsWith('username='))
+}
+
 //
 // class MyP5Graphics extends Graphics {
 //
@@ -301,9 +308,8 @@ function newSketch(loadedSegmentsMetadata :Map<string,Segment>, containerEl:HTML
             sketch.smooth()
 
             if (drawingAllowed()) {
-
-                _.each(stageSelections(), function (i) {
-                    if (stage > i) {
+                _.each(stageSelections(), function (i:Stage) {
+                    if (stage.id > i.id) {
                         sketch.push()
                         sketch.fill("#DDD")
                         sketch.rect(0, sectionHeight * i.id, sketch.width, sectionHeight)
@@ -588,11 +594,17 @@ function newSketch(loadedSegmentsMetadata :Map<string,Segment>, containerEl:HTML
             bufferHeight = Math.floor(sketch.height / 3 * surfaceScalar)
             let bufferHeightEdge = Math.floor(bufferHeight * midEdgeScalar)
             bufferHeightMid = bufferHeight + bufferHeightEdge
-            let sortedSegments = _.sortBy(_.keys(loadedSegmentsMetadata), function (k:number) {
+
+            let idsOnly :string[]=[]
+            for(let l of loadedSegmentsMetadata.keys()){
+                idsOnly.push(l)
+            }
+            let sortedSegments = _.sortBy(idsOnly, function (k:string) {
                 return loadedSegmentsMetadata.get(k).order
             })
+
             var i = 0
-            _.each(sortedSegments, function (key) {
+            _.each(sortedSegments, function (key:string) {
                 let imgHolder = $("#imageDataLoader" + key)
                 if (imgHolder.length === 0) {
                     return
@@ -643,7 +655,7 @@ function getCreatorsList(loadedSegmentsMetadata:Map<string,Segment>){
 // const sketchHolder =
 new Clipboard('#shareUrlCopyBtn');
 
-$("#saveSetUsernameBtn").click(function () {
+$("#saveSetUsernameBtn").on("click",function () {
     var username = ($("#usernameEnteredText")[0] as HTMLInputElement).value
     if (username === null || username.length < 3 || username.length > 256) {
         location.reload()
@@ -661,6 +673,106 @@ $("#saveSetUsernameBtn").click(function () {
 
 function main(){
 
+    // function loadSegments(segments:Map<String,Segment>, containerEl:HTMLElement) {
+    //     _.each(segments, function (v:Segment,key:string,l?:any) {
+    //         let s = v
+    //         var oReq = new XMLHttpRequest();
+    //         oReq.open("get", s.url, true);
+    //         oReq.responseType = "text";
+    //         oReq.onload = function (oEvent) {
+    //
+    //             var blob = oReq.response;
+    //             $("body").append('<img class="hideFully" src="" id="imageDataLoader' + key + '">')
+    //             let img = document.getElementById("imageDataLoader" + key)
+    //             img.onload = function () {
+    //                 console.log("finished loading image " + key)
+    //                 segments[key].loaded=true
+    //                 let allLoaded = _.every(_.keys(segments), function(i) {
+    //                     return segments[i].loaded
+    //                 })
+    //                 if (allLoaded) {
+    //                     console.log("sketch ready")
+    //                     loadedSegmentsMetadata = segments
+    //                     newSketch(segments, containerEl)
+    //                 }
+    //             }
+    //             img.src = blob
+    //
+    //         };
+    //         oReq.send(null);
+    //     })
+    // }
+
+    function extractDataFromImg(img:HTMLImageElement):Segment{
+        let el = $(img)
+        let id = el.data("id")
+        return {
+            "parent": el.data("parent"),
+            "creator": el.data("creator"),
+            "order": el.data("order"),
+            "id": id,
+            "sortBy": id,
+            "group": el.data("group")
+        }
+    }
+
+    function loadSegmentsFromTemplate(containerEl:HTMLElement) {
+        let segments = new Map<string, Segment>()
+        // var i = 0
+        let els = $('.imageDataLoader').each(function(){
+            let data = extractDataFromImg(this as HTMLImageElement)
+            segments.set(data.id,  data)
+        })
+        newSketch(segments, containerEl)
+    }
+
+
+    // function loadGallery(){
+    //     // hide instructions
+    //     // $("#instructionsContainer").addClass("hideFully")
+    //
+    //     let allSegments :Segment[]=[]
+    //     let allSegmentsKeyId = {}
+    //     let completeSegmentIds:string[] = []
+    //     var i = 0
+    //     let els = $('.imageDataLoader').each(function(){
+    //         let data = extractDataFromImg(this)
+    //         allSegments.push(data)
+    //         allSegmentsKeyId[data.id] = data
+    //         if (data.order === 2){
+    //             completeSegmentIds.push(data.id)
+    //         }
+    //     })
+    //     completeSegmentIds.sort(function (a,b) {
+    //         return a.sortBy > b.sortBy
+    //     })
+    //
+    //     let groupByGroup = _.groupBy(allSegments, function (s) {
+    //         return s.group
+    //     })
+    //
+    //     // ordered by sort id
+    //     _.each(completeSegmentIds, function (c:string) {
+    //         let segments = _.indexBy(groupByGroup[allSegmentsKeyId[c].group], function(i){
+    //             return i.id
+    //         })
+    //         // let segments = groupByGroup[allSegmentsKeyId[c].group]
+    //         newSketch(segments, newSketchContainerEl())
+    //     })
+    // }
+
+    function getUsername() {
+        return document.cookie
+            .split('; ')
+            .find(row => row.startsWith('username'))
+            .split('=')[1];
+    }
+    if (hasSetUsername()) {
+        const usernameValue = getUsername();
+        ($("#usernameValueContainer")[0] as HTMLInputElement).value = "User: " + usernameValue
+    }
+
+
     if (pathTest("gallery")){
         //do gallery
     }
@@ -668,9 +780,12 @@ function main(){
         return
     }
 
-    // const gameId = getSegmentId()
-
+    const gameId = getSegmentId()
+if (gameId!==null){
+    loadSegmentsFromTemplate(newSketchContainerEl())
+}else {
     newSketch(null, newSketchContainerEl())
+}
 }
 
 main()
