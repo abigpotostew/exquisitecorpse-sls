@@ -1,0 +1,28 @@
+{
+  "name": "exquisitecorpse-sls",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "run-p start-compile start-run",
+    "start-compile": "tsc --watch",
+    "start-run": "browser-sync start --server -w",
+    "watch": "webpack --watch"
+  },
+  "devDependencies": {
+    "@types/clipboard": "^2.0.1",
+    "@types/jquery": "^3.5.1",
+    "@types/lodash": "^4.14.158",
+    "@types/p5": "^0.9.1",
+    "npm-run-all": "^4.1.5",
+    "ts-loader": "^8.0.2",
+    "typescript": "^3.9.7",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  },
+  "dependencies": {
+    "clipboard": "^2.0.6",
+    "lodash": "^4.17.20",
+    "p5": "^1.1.9",
+    "serverless-api-gateway-throttling": "^1.0.1"
+  }
+}

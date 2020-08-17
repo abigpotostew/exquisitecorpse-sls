@@ -23,7 +23,6 @@ service: exquisitecorpse
 frameworkVersion: '>=1.28.0 <2.0.0'
 
 plugins:
-  - serverless-s3-deploy
   - serverless-api-gateway-throttling
 
 provider:
@@ -49,7 +48,6 @@ functions:
     role: apiExecRole
     environment:
       imageBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-images
-      staticBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-static
       galleryBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-gallery
       LOCAL_STATIC_SERVER_DIR: ${self:custom.config.localStaticServerDir}
     events:
@@ -87,16 +85,6 @@ functions:
 
 custom:
   config: ${file(./config/my.config.yml):${opt:stage}}
-  assets:
-    auto: true
-    targets:
-      - bucket:
-          Ref: StaticBucket
-        files:
-          - source: static/
-            globs:
-              - '**/*.js'
-              - '**/*.html'
   apiGatewayThrottling:
     maxRequestsPerSecond: ${self:custom.config.throttleRateLimit}
     maxConcurrentRequests: ${self:custom.config.throttleBurstLimit}

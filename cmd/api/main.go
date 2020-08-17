@@ -90,7 +90,7 @@ func fetchForId(c *gin.Context, service segment.Service, segmentId string, group
 
 func ginHandle(service segment.Service, staticService static.Service, group *gin.RouterGroup) {
 
-	staticFs := http.Dir("static")
+	staticFs := http.Dir("dist")
 
 	group.GET("/", func(c *gin.Context) {
 		data := HomePageData{}
@@ -262,7 +262,7 @@ func main() {
 
 	r := gin.Default()
 	//r.LoadHTMLFiles("static/index.html.tmpl")
-	r.LoadHTMLFiles("static/common.html.tmpl", "static/gallery.html.tmpl", "static/about.html.tmpl", "static/index.html.tmpl")
+	r.LoadHTMLFiles("dist/common.html.tmpl", "dist/gallery.html.tmpl", "dist/about.html.tmpl", "dist/index.html.tmpl")
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
 	ginHandle(service, staticService, authorized)

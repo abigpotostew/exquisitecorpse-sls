@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+{{template "head" .}}
+<body>
+
+{{template "navbar" .}}
+
+<ul class="nav navbar-light mb-3 pt-3 pb-3" style="background-color: #e3f2fd;">
+    <li class="nav-item">
+        <form class="form-inline">
+            <span class="nav-link">Controls</span>
+            <div id="drawModeButtons" class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-secondary active">
+                    <input type="radio" name="drawMode" id="drawModeDraw" checked value="Draw">Draw
+                </label>
+                <label class="btn btn-secondary">
+                    <input type="radio" name="drawMode" id="drawModeErase" value="Erase">Erase
+                </label>
+            </div>
+        </form>
+    </li>
+    <li class="nav-item">
+        <form class="form-inline ml-3">
+            <span class="nav-link">Share</span>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <button type="button" class="btn btn-success btn-secondary" id="copyShareUrlBtn">Save
+                    </button>
+                </div>
+                <input type="text" id="shareUrl" class="form-control"  aria-label="Share URL" placeholder="">
+                <div class="input-group-append">
+                    <button id="shareUrlCopyBtn" class="btn btn-secondary" type="button" data-clipboard-target="#shareUrl">Copy</button>
+                </div>
+            </div>
+        </form>
+    </li>
+</ul>
+
+<div class="container-fluid">
+    <!-- Content here -->
+    {{template "instructions" .}}
+    {{template "sketchContainer" .}}
+</div>
+
+
+{{range .Segments}}
+    <img class="hideFully imageDataLoader" src="{{.ContentSrc}}" id="imageDataLoader{{.Id}}" data-id="{{.Id}}" data-order="{{.Order}}" data-creator="{{.Creator}}" data-parent="{{.Parent}}" data-group="{{.Group}}">
+{{end}}
+
+{{template "scripts"}}
+
+</body>
+</html>
