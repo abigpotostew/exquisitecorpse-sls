@@ -350,14 +350,22 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
                 sketch.pop()
             }
 
-            // if (!drawingAllowed()){
-            //     //remove all buffers to free memory
-            //     _.each(buffers, function (buffer) {
-            //         buffer.remove()
-            //     })
-            //     console.log("cleared buffers")
-            //     buffers = null
-            // }
+            if (!drawingAllowed()){
+                // //remove all buffers to free memory
+                // _.each(buffers, function (buffer) {
+                //     buffer.remove()
+                // })
+                // console.log("cleared buffers")
+                // buffers = null
+                for (var i = 0; i < buffers.length; ++i) {
+                    buffers[i].remove()
+                    // @ts-ignore
+                    buffers[i].canvas.height = 0
+                    // @ts-ignore
+                    buffers[i].canvas.width = 0
+                }
+                buffers = []
+            }
         };
 
         function drawMouse() {
@@ -398,8 +406,9 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
                     if (px === null) px = sketch.touches[0].x
                     // @ts-ignore
                     if (py === null) py = sketch.touches[0].y
+
                     // @ts-ignore
-                    xy = getLocalPosition(stage, [px, py, sketch.touches[0].x, sketch.touches[0].y])
+                    xy = getLocalPosition(stage.id, [px, py, sketch.touches[0].x, sketch.touches[0].y])
 
                     // @ts-ignore
                     activeDrawingInfo.previousX = sketch.touches[0].x
@@ -504,7 +513,7 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
 
         sketch.keyReleased = () => {
             if (!drawingAllowed()) return
-            
+
 
             if (sketch.key === 'd' || sketch.key === 'D') {
                 drawMode = DRAWMODE_DRAW
