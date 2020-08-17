@@ -50,8 +50,12 @@ interface Segment {
     group: string
 }
 
+interface MyP5Funcs {
+    // keyReleased(event?: object): void;
+    // touchReleased(event?: object): void;
+}
 
-class MyP5 extends p5 {
+class MyP5 extends p5 implements MyP5Funcs{
 
     movedX: number;
     movedY: number;
@@ -60,14 +64,13 @@ class MyP5 extends p5 {
         super(sketch, node)
     }
 
-    keyPressed = (event?: object): void => {
-    };
-    keyReleased = (event?: object): void => {
-    };
-    touchReleased = (event?: object): void => {
-    };
+    // keyPressed = (event?: object): void => {
+    // };
+    // keyReleased = (event?: object): void => {
+    // };
+    // touchReleased = (event?: object): void => {
+    // };
 }
-
 
 function hasSetUsername(): boolean {
     return document.cookie.split(';').some((item) => item.trim().startsWith('username='))
@@ -226,7 +229,7 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
                 generateShareURL();
             })
 
-            $('input:radio[name="drawMode"]').on("change",function () {
+            $('input[type=radio][name="drawMode"]').on("click",function () {
                 let thi = this as HTMLInputElement
                 if (thi.checked && thi.value === DRAWMODE_DRAW) {
                     drawMode = DRAWMODE_DRAW
@@ -234,7 +237,6 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
                     drawMode = DRAWMODE_ERASE
                 }
             })
-
 
         };
 
@@ -420,9 +422,9 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
             }
         }
 
-        sketch.keyPressed = (e) => {
+        sketch.keyPressed = () => {
             // @ts-ignore
-            if (e.key == 'r') {
+            if (sketch.keyCode == 'r') {
                 //reset?
             }
         }
@@ -499,16 +501,18 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
             document.execCommand('copy');
         }
 
-        sketch.keyReleased = (e) => {
+
+        sketch.keyReleased = () => {
             if (!drawingAllowed()) return
-            // @ts-ignore
-            if (e.key === 'd' || e.key === 'D') {
+            
+
+            if (sketch.key === 'd' || sketch.key === 'D') {
                 drawMode = DRAWMODE_DRAW
                 $('#drawModeDraw')[0].setAttribute("checked", "true")
                 $('#drawModeErase')[0].removeAttribute("checked")
             }
-            // @ts-ignore
-            if (e.key === 'e' || e.key === 'E') {
+
+            if (sketch.key === 'e' || sketch.key === 'E') {
                 drawMode = DRAWMODE_ERASE
                 $('#drawModeDraw')[0].removeAttribute("checked")
                 $('#drawModeErase')[0].setAttribute("checked", "true")
@@ -530,6 +534,8 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
             console.debug('mouse released')
             activeDrawingInfo = null
         }
+
+        // @ts-ignore
         sketch.touchReleased = (e) => {
             if (!drawingAllowed()) return
             console.debug('touch released')

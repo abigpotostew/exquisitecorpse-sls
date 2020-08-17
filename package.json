@@ -20,9 +20,7 @@
     "webpack-cli": "^3.3.12"
   },
   "dependencies": {
-    "bootstrap": "^4.5.2",
     "clipboard": "^2.0.6",
-    "jquery": "^3.5.1",
     "lodash": "^4.17.20",
     "p5": "^1.1.9",
     "serverless-api-gateway-throttling": "^1.0.1"
