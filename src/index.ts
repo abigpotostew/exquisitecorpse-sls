@@ -335,6 +335,15 @@ class Controller {
                 this.drawBuffer.stroke(0)
                 drawSize *= 2
             }
+
+            // draw the pen cursor
+            this.sketch.push()
+            this.sketch.noFill()
+            this.sketch.stroke(0)
+            this.sketch.translate(-drawSize/2, -drawSize/2)
+            this.sketch.ellipse(this.sketch.mouseX,this.sketch.mouseY,drawSize,drawSize)
+            this.sketch.pop()
+
             // draw upon the first time the user clicks
             if (this.activeDrawingInfo.previousX !== null && this.sketch.movedX === 0 && this.sketch.movedY === 0) {
                 return
@@ -367,12 +376,14 @@ class Controller {
             }
 
             this.drawBuffer.strokeWeight(drawSize)
-            this.drawBuffer.translate(-drawSize, -drawSize)
+            this.drawBuffer.translate(-drawSize/2, -drawSize/2)
             this.drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
 
             this.drawBuffer.pop()
             // @ts-ignore
             this.drawBuffer.noErase()
+
+
         }
     }
     private generateShareURL() {
