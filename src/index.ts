@@ -56,6 +56,7 @@ const DRAWMODE_ERASE = "Erase"
 
 class Controller {
 
+    container:HTMLElement
     sketch: MyP5
     loadedSegmentsMetadata: Map<string, Segment>
 
@@ -80,9 +81,10 @@ class Controller {
      debugText: string
 
 
-    constructor(sketch: MyP5, loadedSegmentsMetadata: Map<string, Segment>) {
+    constructor(sketch: MyP5, loadedSegmentsMetadata: Map<string, Segment>, container:HTMLElement) {
         this.sketch = sketch;
         this.loadedSegmentsMetadata = loadedSegmentsMetadata;
+        this.container = container
     }
 
     setup(){
@@ -110,6 +112,10 @@ class Controller {
 
         if (hasSetUsername() && !pathTest("gallery")) {
             this.setupInstructions()
+        }
+
+        if (pathTest("gallery")){
+            this.setupGalleryMessage()
         }
 
         $("#copyShareUrlBtn").click(()=> {
@@ -143,6 +149,17 @@ class Controller {
         })
     }
 
+    private setupGalleryMessage(){
+        const data = this.loadedSegmentsMetadata
+        let creatorsSentence = "Drawn by " + this.getCreatorsList(this.loadedSegmentsMetadata) + "."
+        $(this.container).append('<p>' + creatorsSentence + '</p>')
+
+        let obj = _.find(Array.from(data.keys()), function (i) {
+            return data.get(i).order==2
+        })
+        let url = this.createSegmentUrl(data.get(obj).id);
+        $(this.container).append('<p><a href="'+url+'">'+url+'</a></p>')
+    }
     private setupInstructions() {
         let instructions = ""
         if (hasSetUsername()) {
@@ -435,11 +452,10 @@ class Controller {
             console.error("failed to save segment ", gameId)
         }).done(function (data) {
             let gameIdNew = data.id
-            const myUrlWithParams = new URL(window.location.protocol + "//" + window.location.host + "/game/" + gameIdNew);
-
+            const url = this.createSegmentUrl(gameIdNew)
 
             var copyText = document.getElementById("shareUrl") as HTMLInputElement;
-            copyText.value = myUrlWithParams.href;
+            copyText.value = url;
 
 
             var oldEditable = copyText.contentEditable
@@ -454,6 +470,11 @@ class Controller {
             copyText.readOnly = oldReadonly
             document.execCommand("copy");
         });
+    }
+
+    private createSegmentUrl(segmentId:string):string{
+        return new URL(window.location.protocol + "//" + window.location.host + "/game/" + segmentId).href;
+
     }
 
     private iosCopyToClipboard(el: HTMLInputElement) {
@@ -650,7 +671,7 @@ function hasSetUsername(): boolean {
 
 function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HTMLElement) {
     const sketchHolderNew = (sketch:MyP5)=>{
-        const controller = new Controller(sketch, loadedSegmentsMetadata)
+        const controller = new Controller(sketch, loadedSegmentsMetadata, containerEl)
         sketch.setup = () => {
             controller.setup()
         }
