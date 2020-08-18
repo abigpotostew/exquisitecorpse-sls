@@ -677,10 +677,10 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
             controller.touchStarted(e)
         }
         sketch.touchMoved = (e) => {
-            controller.touchMoved(e)
+            return controller.touchMoved(e)
         }
         sketch.mouseDragged = (e) => {
-            controller.mouseDragged(e)
+            return controller.mouseDragged(e)
         }
     }
     const thisp5 = new MyP5(sketchHolderNew, containerEl);
