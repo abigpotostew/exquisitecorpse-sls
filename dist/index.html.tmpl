@@ -5,8 +5,8 @@
 
 {{template "navbar" .}}
 
-<ul class="nav navbar-light mb-3 pt-3 pb-3" style="background-color: #e3f2fd;">
-    <li class="nav-item">
+<ul class="nav navbar-light flex-column flex-sm-row mb-3 pt-3 pb-3" style="background-color: #e3f2fd;">
+    <li class="nav-item flex-sm text-sm-center">
         <form class="form-inline">
             <span class="nav-link">Controls</span>
             <div id="drawModeButtons" class="btn-group btn-group-toggle" data-toggle="buttons">
@@ -19,18 +19,36 @@
             </div>
         </form>
     </li>
-    <li class="nav-item">
-        <form class="form-inline ml-3">
+    <li class="nav-item flex-sm text-sm-center">
+        <form class="form-inline">
+            <span class="nav-link">Pen Size</span>
+            <div id="penSizeButtons" class="input-group-inline">
+                <input type="range" class="custom-range" min="1" max="100" value="5" id="penSizeControlRange"  >
+            </div>
+        </form>
+    </li>
+    <li class="nav-item flex-sm text-sm-center">
+        <form class="form-inline">
+            <span class="nav-link">Color</span>
+            <div id="penColorPicker" class="input-group-inline" >
+                <input type="color" id="penColor" name="penColor" value="#000000" style="min-width: 50px">
+            </div>
+        </form>
+    </li>
+    <li class="nav-item flex-sm text-sm-center">
+        <form class="form-inline ">
             <span class="nav-link">Share</span>
+            <div class="input-group-inline">
             <div class="input-group">
                 <div class="input-group-prepend">
                     <button type="button" class="btn btn-success btn-secondary" id="copyShareUrlBtn">Save
                     </button>
                 </div>
-                <input type="text" id="shareUrl" class="form-control"  aria-label="Share URL" placeholder="">
+                <input type="text" id="shareUrl" class="form-control" aria-label="Share URL" placeholder="">
                 <div class="input-group-append">
                     <button id="shareUrlCopyBtn" class="btn btn-secondary" type="button" data-clipboard-target="#shareUrl">Copy</button>
                 </div>
+            </div>
             </div>
         </form>
     </li>

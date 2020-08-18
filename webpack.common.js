@@ -19,7 +19,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   // this breaks things because the prod build expects the build in jquery module but it should remain external. breaks ajax.
-  // externals: {
-  //   jquery: 'jQuery'
-  // }
+  externals: {
+    p5: 'p5'
+  }
 };

@@ -62,6 +62,8 @@ class Controller {
     stage = Util.HEAD_STAGE
     p5cnv:p5.Renderer
     drawMode: string = DRAWMODE_DRAW
+    penColor: string = "#000000" //hex string
+    penSize: number = 5
 
     surfaceScalar = 1.0//const
     bufferWidth: number
@@ -122,6 +124,22 @@ class Controller {
             } else if (input.checked && input.value === DRAWMODE_ERASE) {
                 controller.drawMode = DRAWMODE_ERASE
             }
+        })
+
+        // $('input[type=radio][name="penSize"]').on("click",function() {
+        //     let input = this as HTMLInputElement
+        //     if (input.checked) {
+        //         controller.penSize = parseInt(input.value)
+        //     }
+        // })
+        $("#penSizeControlRange").on("change", function(){
+            let input = this as HTMLInputElement
+            controller.penSize = parseInt(input.value)
+        })
+
+        $("#penColor").on("change", function (        ) {
+            let input = this as HTMLInputElement
+            controller.penColor = input.value
         })
     }
 
@@ -317,13 +335,15 @@ class Controller {
         // user drawing logic:
         if (this.drawingAllowed() && this.activeDrawingInfo !== null) {
             //do drawing
-            let drawSize = 5
+            let drawSize = this.penSize
+            let penColor = this.penColor
             if (this.drawMode === DRAWMODE_DRAW) {
                 // drawBuffer.noErase()
                 this.drawBuffer.push()
                 console.debug("drawing stroke")
                 this.drawBuffer.fill(0)
-                this.drawBuffer.stroke(0)
+                // this.drawBuffer.stroke(0)
+                this.drawBuffer.stroke(penColor)
 
 
             } else if (this.drawMode === DRAWMODE_ERASE) {
@@ -333,14 +353,13 @@ class Controller {
                 this.drawBuffer.push()
                 this.drawBuffer.fill(0)
                 this.drawBuffer.stroke(0)
-                drawSize *= 2
             }
 
             // draw the pen cursor
             this.sketch.push()
             this.sketch.noFill()
             this.sketch.stroke(0)
-            this.sketch.translate(-drawSize/2, -drawSize/2)
+            // this.sketch.translate(-drawSize/2, -drawSize/2)
             this.sketch.ellipse(this.sketch.mouseX,this.sketch.mouseY,drawSize,drawSize)
             this.sketch.pop()
 
@@ -362,7 +381,7 @@ class Controller {
                 if (py === null) py = this.sketch.touches[0].y
 
                 // @ts-ignore
-                xy = getLocalPosition(stage.id, [px, py, this.sketch.touches[0].x, this.sketch.touches[0].y])
+                xy = this.getLocalPosition(this.stage.id, [px, py, this.sketch.touches[0].x, this.sketch.touches[0].y])
 
                 // @ts-ignore
                 this.activeDrawingInfo.previousX = this.sketch.touches[0].x
@@ -376,7 +395,8 @@ class Controller {
             }
 
             this.drawBuffer.strokeWeight(drawSize)
-            this.drawBuffer.translate(-drawSize/2, -drawSize/2)
+             // this.drawBuffer.translate(-drawSize/2, -drawSize/2)
+             // this.drawBuffer.translate(-drawSize/20, -drawSize/20)
             this.drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
 
             this.drawBuffer.pop()

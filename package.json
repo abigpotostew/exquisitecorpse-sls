@@ -13,6 +13,7 @@
     "@types/p5": "^0.9.1",
     "jquery": "^3.5.1",
     "npm-run-all": "^4.1.5",
+    "p5": "^1.1.9",
     "ts-loader": "^8.0.2",
     "typescript": "^3.9.7",
     "webpack": "^4.44.1",
@@ -22,7 +23,6 @@
   "dependencies": {
     "clipboard": "^2.0.6",
     "lodash": "^4.17.20",
-    "p5": "^1.1.9",
     "serverless-api-gateway-throttling": "^1.0.1"
   }
 }
