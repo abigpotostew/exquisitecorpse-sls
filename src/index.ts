@@ -502,6 +502,7 @@ class Controller {
         if (gameId !== null) {
             path = path + gameId;
         }
+        let controller = this
         $.ajax({
             method: "POST",
             url: path,
