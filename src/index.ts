@@ -5,6 +5,7 @@ import Graphics from "p5"
 import * as Clipboard from "clipboard";
 import * as Util from "./util";
 import {MyP5} from "./extension";
+import {History} from "./history";
 
 const allP5s = new Array<p5>();
 
@@ -50,6 +51,15 @@ interface Segment {
     group: string
 }
 
+interface Drawn {
+    //color, position, size
+    // mode- draw/erase
+    color :string
+    position:number[]
+    strokeWidth:number
+    mode:string
+}
+
 const imageFormat = "image/png";
 const imageQuality = 1.0
 const DRAWMODE_DRAW = "Draw"
@@ -81,11 +91,14 @@ class Controller {
 
      debugText: string
 
+    history: History<Drawn>
+
 
     constructor(sketch: MyP5, loadedSegmentsMetadata: Map<string, Segment>, container:HTMLElement) {
         this.sketch = sketch;
         this.loadedSegmentsMetadata = loadedSegmentsMetadata;
         this.container = container
+        this.history = new History<Drawn>()
     }
 
     setup(){
@@ -315,7 +328,9 @@ class Controller {
             })
         }
 
-        this.drawMouse()
+        this.recordDrawStroke()
+
+        this.drawAll()
 
         if (this.debugText) {
             sketch.push()
@@ -346,8 +361,7 @@ class Controller {
         }
     }
 
-    drawMouse() {
-        const  sketch = this.sketch
+    recordDrawStroke() {
         // user drawing logic:
         if (this.drawingAllowed() && this.activeDrawingInfo !== null) {
             //do drawing
@@ -370,6 +384,8 @@ class Controller {
                 this.drawBuffer.fill(0)
                 this.drawBuffer.stroke(0)
             }
+
+
 
             // draw the pen cursor
             this.sketch.push()
@@ -410,10 +426,18 @@ class Controller {
                 this.activeDrawingInfo.previousY = this.sketch.mouseY
             }
 
+            let drawn:Drawn = {
+                color:penColor,
+                strokeWidth:drawSize,
+                position: xy,
+                mode: this.drawMode
+        }
+            this.history.add(drawn)
+
+
             this.drawBuffer.strokeWeight(drawSize)
              // this.drawBuffer.translate(-drawSize/2, -drawSize/2)
-             // this.drawBuffer.translate(-drawSize/20, -drawSize/20)
-            this.drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
+            // this.drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
 
             this.drawBuffer.pop()
             // @ts-ignore
@@ -422,10 +446,47 @@ class Controller {
 
         }
     }
+
+    private drawAll(){
+        const drawHistory = this.history.getHistory()
+        for (let i = 0; i < drawHistory.length; i++) {
+            const group = drawHistory[i]
+            let px = group[0].position[0],
+                py = group[0].position[1],
+                drawSize=0,
+                penColor=""
+            for (let j = 0; j < group.length; j++) {
+                const item = group[j]
+                drawSize = item.strokeWidth
+                 penColor = item.color
+                if (item.mode === DRAWMODE_DRAW) {
+                    this.drawBuffer.push()
+                    this.drawBuffer.fill(0)
+                    this.drawBuffer.stroke(penColor)
+                } else if (item.mode === DRAWMODE_ERASE) {
+                    // @ts-ignore
+                    this.drawBuffer.erase()
+                    this.drawBuffer.push()
+                    this.drawBuffer.fill(0)
+                    this.drawBuffer.stroke(0)
+                }
+                this.drawBuffer.strokeWeight(drawSize)
+                this.drawBuffer.line(px, py, item.position[0],item.position[1])
+                this.drawBuffer.pop()
+                // @ts-ignore
+                this.drawBuffer.noErase()
+
+                px = item.position[0]
+                py = item.position[1]
+            }
+        }
+    }
+
     private generateShareURL() {
         if (this.stage === Util.END_STAGE) {
             return
         }
+        let controller = this
 
         function serialize(buf: Graphics) {
             // @ts-ignore
@@ -437,6 +498,7 @@ class Controller {
 
         let gameId = getSegmentId()
         let path = "/api/v1/segments/"
+
         if (gameId !== null) {
             path = path + gameId;
         }
@@ -451,7 +513,7 @@ class Controller {
             console.error("failed to save segment ", gameId)
         }).done(function (data) {
             let gameIdNew = data.id
-            const url = this.createSegmentUrl(gameIdNew)
+            const url = controller.createSegmentUrl(gameIdNew)
 
             var copyText = document.getElementById("shareUrl") as HTMLInputElement;
             copyText.value = url;
@@ -519,26 +581,25 @@ class Controller {
     mousePressed = (e:object|undefined) => {
         if (this.drawingAllowed() && this.mouseEventOnCanvas(e)) {
             console.debug("mouse pressed")
-            this.activeDrawingInfo = new ActiveDrawInfo(null, null)
+            this.startDrawing()
             return false
         }
     }
 
     mouseReleased  (e:object|undefined) {
-
         if (!this.drawingAllowed()) return
         console.debug('mouse released')
-        this.activeDrawingInfo = null
+        this.stopDrawing()
     }
     touchReleased  (e:object|undefined) {
         if (!this.drawingAllowed()) return
         console.debug('touch released')
-        this.activeDrawingInfo = null
+        this.stopDrawing()
     }
     private touchStartedImpl(e: any) {
         if (this.drawingAllowed() && this.mouseEventOnCanvas(e)) {
             console.debug("touch started canvas")
-            this.activeDrawingInfo = new ActiveDrawInfo(null, null)
+            this.startDrawing()
             return false
         }
     }
@@ -553,12 +614,21 @@ class Controller {
         let on = this.mouseEventOnCanvas(e)
         if (on && this.sketch.touches && this.sketch.touches.length > 1) {
             // console.log("multiple touches allowing zooming default")
-            this.activeDrawingInfo = null
+            this.stopDrawing()
             return true// allow default and don't allow drawing
         } else {
             return !on
         }
     }
+    private startDrawing(){
+        this.history.startGroup()
+        this.activeDrawingInfo = new ActiveDrawInfo(null, null)
+    }
+
+    private stopDrawing(){
+        this.activeDrawingInfo = null
+    }
+
     private getLocalPosition(i: number, se: number[]) {
         return [se[0], se[1] - i * this.sectionHeight, se[2], se[3] - i * this.sectionHeight]
     }
