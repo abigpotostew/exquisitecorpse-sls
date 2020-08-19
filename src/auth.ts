@@ -11,7 +11,7 @@ export function getUsername() {
 
 export const INVALID_USERNAME_MSG = "Username must be between 3 and 256 characters"
 export function validUsername(username:string){
-     return (username === null || username.length < 3 || username.length > 256)
+     return (username !== null && username.length > 3 && username.length < 256)
 }
 
 export function saveUsername(username: string){
