@@ -440,6 +440,7 @@ class Controller {
         if (gameId !== null) {
             path = path + gameId;
         }
+        let controller = this
         $.ajax({
             method: "POST",
             url: path,
@@ -451,7 +452,7 @@ class Controller {
             console.error("failed to save segment ", gameId)
         }).done(function (data) {
             let gameIdNew = data.id
-            const url = this.createSegmentUrl(gameIdNew)
+            const url = controller.createSegmentUrl(gameIdNew)
 
             var copyText = document.getElementById("shareUrl") as HTMLInputElement;
             copyText.value = url;
