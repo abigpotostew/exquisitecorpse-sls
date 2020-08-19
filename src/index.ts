@@ -4,6 +4,7 @@ import * as p5 from "p5"
 import Graphics from "p5"
 import * as Clipboard from "clipboard";
 import * as Util from "./util";
+import {MyP5} from "./extension";
 
 const allP5s = new Array<p5>();
 
@@ -152,13 +153,11 @@ class Controller {
     private setupGalleryMessage(){
         const data = this.loadedSegmentsMetadata
         let creatorsSentence = "Drawn by " + this.getCreatorsList(this.loadedSegmentsMetadata) + "."
-        $(this.container).append('<p>' + creatorsSentence + '</p>')
-
         let obj = _.find(Array.from(data.keys()), function (i) {
             return data.get(i).order==2
         })
         let url = this.createSegmentUrl(data.get(obj).id);
-        $(this.container).append('<p><a href="'+url+'">'+url+'</a></p>')
+        $(this.container).prepend('<p>' + creatorsSentence + ' <a href="'+url+'" target="_blank">Direct Link</a></p>')
     }
     private setupInstructions() {
         let instructions = ""
@@ -652,16 +651,6 @@ class Controller {
         } else {
             return creators[0]
         }
-    }
-}
-
-// MyP5 Adds some missing fields for @types/p5
-class MyP5 extends p5 {
-    movedX: number;
-    movedY: number;
-
-    constructor(sketch: (...args: any[]) => any, node?: HTMLElement) {
-        super(sketch, node)
     }
 }
 
