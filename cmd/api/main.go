@@ -82,7 +82,8 @@ func fetchForId(c *gin.Context, service segment.Service, segmentId string, group
 			Order:      strconv.Itoa(s.Order),
 			Creator:    s.Creator,
 			Parent:     s.Parent,
-			Group:      group,
+
+			Group: group,
 		}
 	}
 	return segmentData, nil

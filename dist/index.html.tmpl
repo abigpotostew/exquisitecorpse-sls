@@ -8,14 +8,21 @@
 <ul class="nav navbar-light flex-column flex-sm-row mb-3 pt-3 pb-3" style="background-color: #e3f2fd;">
     <li class="nav-item flex-sm text-sm-center">
         <form class="form-inline">
+
             <span class="nav-link">Controls</span>
-            <div id="drawModeButtons" class="btn-group btn-group-toggle" data-toggle="buttons">
-                <label class="btn btn-secondary active">
-                    <input type="radio" name="drawMode" id="drawModeDraw" checked value="Draw">Draw
-                </label>
-                <label class="btn btn-secondary">
-                    <input type="radio" name="drawMode" id="drawModeErase" value="Erase">Erase
-                </label>
+            <div class="btn-toolbar" role="toolbar" aria-label="Controls toolbar">
+                <div id="drawModeButtons" role="group" class="btn-group btn-group-toggle mr-2" data-toggle="buttons">
+                    <label class="btn btn-secondary active">
+                        <input type="radio" name="drawMode" id="drawModeDraw" checked value="Draw">Draw
+                    </label>
+                    <label class="btn btn-secondary">
+                        <input type="radio" name="drawMode" id="drawModeErase" value="Erase">Erase
+                    </label>
+                </div>
+                <div id="undoRedoButtons" class="btn-group">
+                    <button type="button" id="undoButton" class="btn btn-secondary">Undo</button>
+                    <button type="button" id="redoButton" class="btn btn-secondary">Redo</button>
+                </div>
             </div>
         </form>
     </li>

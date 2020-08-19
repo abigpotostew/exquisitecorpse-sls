@@ -6,15 +6,11 @@ import * as Clipboard from "clipboard";
 import * as Util from "./util";
 import {MyP5} from "./extension";
 import {History} from "./history";
+import {getSegmentId, pathTest} from "./page";
+import {getUsername, hasSetUsername, INVALID_USERNAME_MSG, saveUsername, validUsername} from "./auth";
+import {load, Segment, SketchData} from "./data";
 
 const allP5s = new Array<p5>();
-
-type PageNames = "index" | "gallery" | "about" | "game";
-
-function pathTest(page: PageNames): boolean {
-    let regGame = new RegExp('^\/' + page + '$');
-    return regGame.test(location.pathname)
-}
 
 class ActiveDrawInfo {
     previousX: number
@@ -33,31 +29,13 @@ function newSketchContainerEl() {
     return sketchContainer[0]
 }
 
-function getSegmentId(): string {
-    let regGame = /^\/game\/(\w+)$/;
-    if (regGame.test(location.pathname)) {
-        //get game id
-        return regGame.exec(location.pathname)[1];
-    }
-    return null
-}
-
-interface Segment {
-    parent: string,
-    creator: string,
-    order: number,
-    id: string,
-    sortBy: string,
-    group: string
-}
-
 interface Drawn {
     //color, position, size
     // mode- draw/erase
-    color :string
-    position:number[]
-    strokeWidth:number
-    mode:string
+    color: string
+    position: number[]
+    strokeWidth: number
+    mode: string
 }
 
 const imageFormat = "image/png";
@@ -67,55 +45,54 @@ const DRAWMODE_ERASE = "Erase"
 
 class Controller {
 
-    container:HTMLElement
+    container: HTMLElement
     sketch: MyP5
-    loadedSegmentsMetadata: Map<string, Segment>
+    loadedSegmentsMetadata: SketchData
 
     stage = Util.HEAD_STAGE
-    p5cnv:p5.Renderer
+    p5cnv: p5.Renderer
     drawMode: string = DRAWMODE_DRAW
     penColor: string = "#000000" //hex string
     penSize: number = 5
 
     surfaceScalar = 1.0//const
     bufferWidth: number
-     bufferHeight: number
-     bufferHeightMid: number
-     sectionWidth: number
-     sectionHeight: number
-     sectionHeightMid: number
-     drawBuffer: p5.Graphics
-     buffers = new Array<p5.Graphics>()
+    bufferHeight: number
+    bufferHeightMid: number
+    sectionWidth: number
+    sectionHeight: number
+    sectionHeightMid: number
+    drawBuffer: p5.Graphics
+    buffers = new Array<p5.Graphics>()
 
-     activeDrawingInfo: ActiveDrawInfo = null
+    activeDrawingInfo: ActiveDrawInfo = null
 
-     debugText: string
+    debugText: string
 
     history: History<Drawn>
 
-
-    constructor(sketch: MyP5, loadedSegmentsMetadata: Map<string, Segment>, container:HTMLElement) {
+    constructor(sketch: MyP5, loadedSegmentsMetadata: SketchData, container: HTMLElement) {
         this.sketch = sketch;
         this.loadedSegmentsMetadata = loadedSegmentsMetadata;
         this.container = container
         this.history = new History<Drawn>()
     }
 
-    setup(){
+    setup() {
         this.p5cnv = this.sketch.createCanvas(800, 1200);
         this.sketch.background(0);
 
         this.loadData(this.sketch)
 
-        $(window).on("unload", ()=> {
+        $(window).on("unload", () => {
             this.Unload()
         });
 
-        $(document.body).on("unload", ()=>{
+        $(document.body).on("unload", () => {
             this.Unload()
         })
 
-        $("a").on("click", ()=> {
+        $("a").on("click", () => {
             this.Unload()
         })
 
@@ -123,21 +100,21 @@ class Controller {
             this.sketch.noLoop()
         }
 
-
         if (hasSetUsername() && !pathTest("gallery")) {
             this.setupInstructions()
         }
 
-        if (pathTest("gallery")){
+        if (pathTest("gallery")) {
             this.setupGalleryMessage()
+            return
         }
 
-        $("#copyShareUrlBtn").click(()=> {
+        $("#copyShareUrlBtn").click(() => {
             this.generateShareURL();
         })
 
         let controller = this
-        $('input[type=radio][name="drawMode"]').on("click",function() {
+        $('input[type=radio][name="drawMode"]').on("click", function () {
             let input = this as HTMLInputElement
             if (input.checked && input.value === DRAWMODE_DRAW) {
                 controller.drawMode = DRAWMODE_DRAW
@@ -146,32 +123,31 @@ class Controller {
             }
         })
 
-        // $('input[type=radio][name="penSize"]').on("click",function() {
-        //     let input = this as HTMLInputElement
-        //     if (input.checked) {
-        //         controller.penSize = parseInt(input.value)
-        //     }
-        // })
-        $("#penSizeControlRange").on("change", function(){
+        $("#penSizeControlRange").on("change", function () {
             let input = this as HTMLInputElement
             controller.penSize = parseInt(input.value)
         })
 
-        $("#penColor").on("change", function (        ) {
+        $("#penColor").on("change", function () {
             let input = this as HTMLInputElement
             controller.penColor = input.value
         })
+
+        $("#undoButton").on("click", () => {
+            this.history.undo()
+        })
+        $("#redoButton").on("click", () => {
+            this.history.redo()
+        })
     }
 
-    private setupGalleryMessage(){
-        const data = this.loadedSegmentsMetadata
-        let creatorsSentence = "Drawn by " + this.getCreatorsList(this.loadedSegmentsMetadata) + "."
-        let obj = _.find(Array.from(data.keys()), function (i) {
-            return data.get(i).order==2
-        })
-        let url = this.createSegmentUrl(data.get(obj).id);
-        $(this.container).prepend('<p>' + creatorsSentence + ' <a href="'+url+'" target="_blank">Direct Link</a></p>')
+    private setupGalleryMessage() {
+        const creatorsSentence = "Drawn by " + this.getCreatorsList() + "."
+        const lastSegment = this.loadedSegmentsMetadata.lastSegment
+        let url = this.createSegmentUrl(lastSegment.id);
+        $(this.container).prepend('<p>' + creatorsSentence + ' <a href="' + url + '" target="_blank">Direct Link</a></p>')
     }
+
     private setupInstructions() {
         let instructions = ""
         if (hasSetUsername()) {
@@ -203,7 +179,7 @@ class Controller {
             }
 
             if (this.stage.id === Util.END_STAGE.id && this.loadedSegmentsMetadata !== null) {
-                let creatorsSentence = "Drawn by " + this.getCreatorsList(this.loadedSegmentsMetadata) + "."
+                let creatorsSentence = "Drawn by " + this.getCreatorsList() + "."
                 $(instrBox).append('<p>' + creatorsSentence + '</p>')
             }
         }
@@ -282,7 +258,7 @@ class Controller {
         }
     }
 
-    draw (){
+    draw() {
         const sketch = this.sketch
         const controller = this
         if (!this.sketch.focused) {
@@ -341,7 +317,7 @@ class Controller {
             sketch.pop()
         }
 
-        if (!this.drawingAllowed()){
+        if (!this.drawingAllowed()) {
             // //remove all buffers to free memory
             // _.each(buffers, function (buffer) {
             //     buffer.remove()
@@ -367,32 +343,13 @@ class Controller {
             //do drawing
             let drawSize = this.penSize
             let penColor = this.penColor
-            if (this.drawMode === DRAWMODE_DRAW) {
-                // drawBuffer.noErase()
-                this.drawBuffer.push()
-                console.debug("drawing stroke")
-                this.drawBuffer.fill(0)
-                // this.drawBuffer.stroke(0)
-                this.drawBuffer.stroke(penColor)
-
-
-            } else if (this.drawMode === DRAWMODE_ERASE) {
-                console.log("drawing erase")
-                // @ts-ignore
-                this.drawBuffer.erase()
-                this.drawBuffer.push()
-                this.drawBuffer.fill(0)
-                this.drawBuffer.stroke(0)
-            }
-
-
 
             // draw the pen cursor
             this.sketch.push()
             this.sketch.noFill()
             this.sketch.stroke(0)
             // this.sketch.translate(-drawSize/2, -drawSize/2)
-            this.sketch.ellipse(this.sketch.mouseX,this.sketch.mouseY,drawSize,drawSize)
+            this.sketch.ellipse(this.sketch.mouseX, this.sketch.mouseY, drawSize, drawSize)
             this.sketch.pop()
 
             // draw upon the first time the user clicks
@@ -402,9 +359,7 @@ class Controller {
 
             let xy = null
             if (this.sketch.touches && this.sketch.touches.length > 0) {
-                // sketch.mouseX, sketch.mouseY
 
-                // xy = getLocalPosition(stage, [sketch.touches[0].x, sketch.touches[0].y, sketch.touches[0].x, sketch.touches[0].y])
                 let px = this.activeDrawingInfo.previousX;
                 let py = this.activeDrawingInfo.previousY;
                 // @ts-ignore
@@ -426,39 +381,32 @@ class Controller {
                 this.activeDrawingInfo.previousY = this.sketch.mouseY
             }
 
-            let drawn:Drawn = {
-                color:penColor,
-                strokeWidth:drawSize,
+            let drawn: Drawn = {
+                color: penColor,
+                strokeWidth: drawSize,
                 position: xy,
                 mode: this.drawMode
-        }
+            }
             this.history.add(drawn)
-
-
-            this.drawBuffer.strokeWeight(drawSize)
-             // this.drawBuffer.translate(-drawSize/2, -drawSize/2)
-            // this.drawBuffer.line(xy[0], xy[1], xy[2], xy[3])
-
-            this.drawBuffer.pop()
-            // @ts-ignore
-            this.drawBuffer.noErase()
-
-
         }
     }
 
-    private drawAll(){
+    private drawAll() {
+        if (!this.drawingAllowed()) {
+            return
+        }
+        this.drawBuffer.clear()
         const drawHistory = this.history.getHistory()
         for (let i = 0; i < drawHistory.length; i++) {
             const group = drawHistory[i]
             let px = group[0].position[0],
                 py = group[0].position[1],
-                drawSize=0,
-                penColor=""
+                drawSize = 0,
+                penColor = ""
             for (let j = 0; j < group.length; j++) {
                 const item = group[j]
                 drawSize = item.strokeWidth
-                 penColor = item.color
+                penColor = item.color
                 if (item.mode === DRAWMODE_DRAW) {
                     this.drawBuffer.push()
                     this.drawBuffer.fill(0)
@@ -471,7 +419,7 @@ class Controller {
                     this.drawBuffer.stroke(0)
                 }
                 this.drawBuffer.strokeWeight(drawSize)
-                this.drawBuffer.line(px, py, item.position[0],item.position[1])
+                this.drawBuffer.line(px, py, item.position[0], item.position[1])
                 this.drawBuffer.pop()
                 // @ts-ignore
                 this.drawBuffer.noErase()
@@ -486,7 +434,6 @@ class Controller {
         if (this.stage === Util.END_STAGE) {
             return
         }
-        let controller = this
 
         function serialize(buf: Graphics) {
             // @ts-ignore
@@ -534,7 +481,7 @@ class Controller {
         });
     }
 
-    private createSegmentUrl(segmentId:string):string{
+    private createSegmentUrl(segmentId: string): string {
         return new URL(window.location.protocol + "//" + window.location.host + "/game/" + segmentId).href;
 
     }
@@ -560,10 +507,11 @@ class Controller {
         document.execCommand('copy');
     }
 
-    keyPressed(){
+    keyPressed() {
 
     }
-    keyReleased(){
+
+    keyReleased() {
         if (!this.drawingAllowed()) return
 
 
@@ -578,8 +526,19 @@ class Controller {
             $('#drawModeDraw')[0].removeAttribute("checked")
             $('#drawModeErase')[0].setAttribute("checked", "true")
         }
+
+        // undo behavior
+        if (this.sketch.key === 'z' || this.sketch.key === 'Z') {
+            this.history.undo()
+        }
+
+        // redo behavior
+        if (this.sketch.key === 'r' || this.sketch.key === 'R') {
+            this.history.redo()
+        }
     }
-    mousePressed = (e:object|undefined) => {
+
+    mousePressed = (e: object | undefined) => {
         if (this.drawingAllowed() && this.mouseEventOnCanvas(e)) {
             console.debug("mouse pressed")
             this.startDrawing()
@@ -587,16 +546,18 @@ class Controller {
         }
     }
 
-    mouseReleased  (e:object|undefined) {
+    mouseReleased(e: object | undefined) {
         if (!this.drawingAllowed()) return
         console.debug('mouse released')
         this.stopDrawing()
     }
-    touchReleased  (e:object|undefined) {
+
+    touchReleased(e: object | undefined) {
         if (!this.drawingAllowed()) return
         console.debug('touch released')
         this.stopDrawing()
     }
+
     private touchStartedImpl(e: any) {
         if (this.drawingAllowed() && this.mouseEventOnCanvas(e)) {
             console.debug("touch started canvas")
@@ -605,12 +566,13 @@ class Controller {
         }
     }
 
-    touchStarted(e:object|undefined){
+    touchStarted(e: object | undefined) {
         if (!this.drawingAllowed()) return
         console.debug("touch started")
         return this.touchStartedImpl(e)
     }
-    touchMoved  (e:object|undefined){
+
+    touchMoved(e: object | undefined) {
         if (!this.drawingAllowed()) return
         let on = this.mouseEventOnCanvas(e)
         if (on && this.sketch.touches && this.sketch.touches.length > 1) {
@@ -621,12 +583,13 @@ class Controller {
             return !on
         }
     }
-    private startDrawing(){
+
+    private startDrawing() {
         this.history.startGroup()
         this.activeDrawingInfo = new ActiveDrawInfo(null, null)
     }
 
-    private stopDrawing(){
+    private stopDrawing() {
         this.activeDrawingInfo = null
     }
 
@@ -648,11 +611,12 @@ class Controller {
         return target === cvsEl
     }
 
-    mouseDragged  (e:object|undefined) {
+    mouseDragged(e: object | undefined) {
         if (!this.drawingAllowed()) return
         console.debug("mouse dragged")
         return !this.mouseEventOnCanvas(e)
     }
+
     private loadData(sketch: p5) {
         // setup buffer and draw area sizes
         let midEdgeScalar = 0.07
@@ -667,17 +631,12 @@ class Controller {
 
         const controller = this
         if (this.loadedSegmentsMetadata) {
-            let idsOnly: string[] = []
-            for (let l of this.loadedSegmentsMetadata.keys()) {
-                idsOnly.push(l)
-            }
-            let sortedSegments = _.sortBy(idsOnly, function (k: string) {
-                return controller.loadedSegmentsMetadata.get(k).order
-            })
+
+            let sortedSegments = controller.loadedSegmentsMetadata.segments
 
             var i = 0
-            _.each(sortedSegments, function (key: string) {
-                let imgHolder = $("#imageDataLoader" + key)
+            _.each(sortedSegments, function (segment: Segment) {
+                let imgHolder = $("#imageDataLoader" + segment.id)
                 if (imgHolder.length === 0) {
                     return
                 }
@@ -687,7 +646,7 @@ class Controller {
                 controller.buffers.push(sketch.createGraphics(controller.bufferWidth, controller.bufferHeightMid)) //todo get this height figure out
                 controller.buffers[i].clear()
 
-                let img = document.getElementById("imageDataLoader" + key)
+                let img = document.getElementById("imageDataLoader" + segment.id)
                 // @ts-ignore
                 controller.buffers[i].canvas.getContext("2d").drawImage(img, 0, 0, controller.bufferWidth, controller.bufferHeightMid)//, bufferWidth, bufferHeightMid)
                 i += 1
@@ -708,14 +667,11 @@ class Controller {
         return arr.join(', ') + ' and ' + last;
     }
 
-    private  getCreatorsList(loadedSegmentsMetadata: Map<string, Segment>) {
-        let idsOnly: string[] = []
-        for (let l of loadedSegmentsMetadata.keys()) {
-            idsOnly.push(l)
-        }
-        let creators = _.map(idsOnly, function (k: string) {
-            return loadedSegmentsMetadata.get(k).creator
+    private getCreatorsList() {
+        let creators = _.map(this.loadedSegmentsMetadata.segments, function (s: Segment) {
+            return s.creator
         })
+
         creators = _.uniq(creators)
         if (creators.length > 1) {
             return this.arrayToSentence(creators.reverse())
@@ -725,12 +681,8 @@ class Controller {
     }
 }
 
-function hasSetUsername(): boolean {
-    return document.cookie.split(';').some((item) => item.trim().startsWith('username='))
-}
-
-function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HTMLElement) {
-    const sketchHolderNew = (sketch:MyP5)=>{
+function newSketch(loadedSegmentsMetadata: SketchData, containerEl: HTMLElement) {
+    const sketchHolderNew = (sketch: MyP5) => {
         const controller = new Controller(sketch, loadedSegmentsMetadata, containerEl)
         sketch.setup = () => {
             controller.setup()
@@ -738,7 +690,7 @@ function newSketch(loadedSegmentsMetadata: Map<string, Segment>, containerEl: HT
         sketch.draw = () => {
             controller.draw()
         }
-        sketch.keyPressed=()=>{
+        sketch.keyPressed = () => {
             controller.keyPressed()
         }
         sketch.keyReleased = () => {
@@ -772,100 +724,33 @@ new Clipboard('#shareUrlCopyBtn');
 
 $("#saveSetUsernameBtn").on("click", function () {
     var username = ($("#usernameEnteredText")[0] as HTMLInputElement).value
-    if (username === null || username.length < 3 || username.length > 256) {
+    if (!validUsername(username)) {
+        alert(INVALID_USERNAME_MSG)
         location.reload()
-        throw new Error("Username must be between 3 and 256 characters")
+        return
     }
-
-    var now = new Date();
-    var time = now.getTime();
-    var expireTime = time + 48 * 60 * 60 * 1000; //48 hours
-    now.setTime(expireTime);
-    document.cookie = 'username=' + username + ';expires=' + now.toUTCString() + ';path=/';
-
+    saveUsername(username)
     location.reload();
 })
 
 function main() {
-    function extractDataFromImg(img: HTMLImageElement): Segment {
-        let el = $(img)
-        let id = el.data("id")
-        return {
-            "parent": el.data("parent"),
-            "creator": el.data("creator"),
-            "order": el.data("order"),
-            "id": id,
-            "sortBy": id,
-            "group": el.data("group")
-        }
-    }
-
-    function loadSegmentsFromTemplate(containerEl: HTMLElement) {
-        let segments = new Map<string, Segment>()
-        $('.imageDataLoader').each(function () {
-            let data = extractDataFromImg(this as HTMLImageElement)
-            segments.set(data.id, data)
-        })
-        newSketch(segments, containerEl)
-    }
-
-
-    function loadGallery(){
-        let allSegments :Segment[]=[]
-        let allSegmentsKeyId = new Map<string,Segment>()
-        let completeSegmentIds:string[] = []
-        var i = 0
-        let els = $('.imageDataLoader').each(function(){
-            let data = extractDataFromImg(this as HTMLImageElement)
-            allSegments.push(data)
-            allSegmentsKeyId.set(data.id, data)
-            if (data.order === 2){
-                completeSegmentIds.push(data.id)
-            }
-        })
-        completeSegmentIds.sort()
-
-        let groupByGroup = _.groupBy(allSegments, function (s) {
-            return s.group
-        })
-
-        // ordered by id
-        _.each(completeSegmentIds, function (c:string) {
-            let group = groupByGroup[allSegmentsKeyId.get(c).group]
-            let segments = new Map<string,Segment>()
-            for (let s of group){
-                segments.set(s.id, s)
-            }
-            newSketch(segments, newSketchContainerEl())
-        })
-    }
-
-    function getUsername() {
-        return document.cookie
-            .split('; ')
-            .find(row => row.startsWith('username'))
-            .split('=')[1];
-    }
 
     if (hasSetUsername()) {
         const usernameValue = getUsername();
         ($("#usernameValueContainer")[0] as HTMLInputElement).value = "User: " + usernameValue
     }
 
-
-    if (pathTest("gallery")) {
-        //do gallery
-        loadGallery()
-        return
-    } else if (pathTest("about")) {
+    if (pathTest("about")) {
         return
     }
 
-    const gameId = getSegmentId()
-    if (gameId !== null) {
-        loadSegmentsFromTemplate(newSketchContainerEl())
-    } else {
+    const datas = load()
+    if (datas === null) {
         newSketch(null, newSketchContainerEl())
+    } else {
+        _.each(datas, function (data) {
+            newSketch(data, newSketchContainerEl())
+        })
     }
 }
 
