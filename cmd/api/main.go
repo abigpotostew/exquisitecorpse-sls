@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/httperror"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/static"
 
@@ -141,16 +143,28 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		}
 
 		allSegments := make([]SegmentData, 0)
+		wg := new(errgroup.Group)
+		mux := new(sync.Mutex)
 		for i, v := range out.CompleteSegmentIds {
-			res, err := fetchForId(c, service, v, i)
-			if err != nil {
-				c.Error(err)
-				c.JSON(httperror.Response(err))
-				return
-			}
-			for _, v := range res {
-				allSegments = append(allSegments, v)
-			}
+			id := v
+			group := i
+			wg.Go(func() error {
+				res, err := fetchForId(c, service, id, group)
+				if err != nil {
+					return err
+				}
+				mux.Lock()
+				defer mux.Unlock()
+				for _, v := range res {
+					allSegments = append(allSegments, v)
+				}
+				return nil
+			})
+		}
+		if err := wg.Wait(); err != nil {
+			c.Error(err)
+			c.JSON(httperror.Response(err))
+			return
 		}
 
 		galleryNextToken := ""

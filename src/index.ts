@@ -346,7 +346,7 @@ class Controller {
             const destWidth = this.bufferWidth
             const destHeight = this.bufferHeightMid//Math.min(srcHeight*widthRatio, this.bufferHeightMid*10000)
 
-            ctx.drawImage(this.videoStream.video, 0, 0, srcWidth, srcHeight, 0, 0, destWidth, destHeight)
+            ctx.drawImage(this.videoStream.video, 0, 0, srcWidth, srcHeight, 0, this.bufferHeight*this.stage.id, destWidth, destHeight)
         }
     }
 
