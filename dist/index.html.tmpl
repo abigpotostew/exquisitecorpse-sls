@@ -19,12 +19,9 @@
                         <input type="radio" name="drawMode" id="drawModeErase" value="Erase">Erase
                     </label>
                 </div>
-                <div id="undoRedoButtons" class="btn-group mr-2">
-                    <button type="button" id="undoButton" class="btn btn-secondary">Undo</button>
-                    <button type="button" id="redoButton" class="btn btn-secondary">Redo</button>
-                </div>
-                <div id="captureWebcamButtons" class="btn-group">
-                    <button type="button" id="captureWebcamButton" class="btn btn-secondary">Capture Webcam</button>
+                <div id="undoRedoButtons" class="btn-group">
+                    <button type="button" id="undoButton" class="btn btn-secondary">↶</button>
+                    <button type="button" id="redoButton" class="btn btn-secondary">↷</button>
                 </div>
             </div>
         </form>
@@ -46,7 +43,15 @@
         </form>
     </li>
     <li class="nav-item flex-sm text-sm-center">
-        <form class="form-inline ">
+        <form class="form-inline">
+            <span class="nav-link">Image</span>
+            <div id="captureWebcamButtons" class="btn-group">
+                <button type="button" id="captureWebcamButton" class="btn btn-secondary">Capture Webcam</button>
+            </div>
+        </form>
+    </li>
+    <li class="nav-item flex-sm text-sm-center">
+        <form class="form-inline">
             <span class="nav-link">Share</span>
             <div class="input-group-inline">
             <div class="input-group">

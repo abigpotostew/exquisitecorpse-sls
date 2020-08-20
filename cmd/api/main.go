@@ -207,35 +207,40 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	})
 
 	group.POST("/api/v1/segments", func(c *gin.Context) {
-		if c.ContentType() != requiredImageType {
-			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "invalid content type: "+c.ContentType())))
-			return
-		}
-		data, err := c.GetRawData()
-		if err != nil {
-			c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "cannot get content body")))
-			return
-		}
-		if !auth.HasUsername(c) {
-			c.JSON(httperror.Response(httperror.NewWithDefaultErrorMessage(http.StatusUnauthorized)))
-			return
-		}
-
-		createSeg := segment.RequestCreateSegment{
-			Parent:      "",
-			Creator:     auth.GetUsername(c),
-			Content:     data,
-			ContentType: c.ContentType(),
-			Order:       0,
-		}
-		out, err := service.Create(createSeg)
-		if err != nil {
-			c.Error(err)
-			c.JSON(httperror.Response(err))
-			return
-		}
-		c.JSON(http.StatusCreated, out)
+		handleCreate(c, service)
 	})
+}
+
+func handleCreate(c *gin.Context, service segment.Service) {
+	if c.ContentType() != requiredImageType {
+		c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "invalid content type: "+c.ContentType())))
+		return
+	}
+	data, err := c.GetRawData()
+	if err != nil {
+		c.JSON(httperror.Response(httperror.New(http.StatusBadRequest, "cannot get content body")))
+		return
+	}
+	if !auth.HasUsername(c) {
+		c.JSON(httperror.Response(httperror.NewWithDefaultErrorMessage(http.StatusUnauthorized)))
+		return
+	}
+
+	createSeg := segment.RequestCreateSegment{
+		Parent:      "",
+		Creator:     auth.GetUsername(c),
+		Content:     data,
+		ContentType: c.ContentType(),
+		Order:       0,
+	}
+	out, err := service.Create(createSeg)
+	if err != nil {
+		c.Error(err)
+		c.JSON(httperror.Response(err))
+		return
+	}
+	c.JSON(http.StatusCreated, out)
+
 }
 
 func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {

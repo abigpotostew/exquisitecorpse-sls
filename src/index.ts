@@ -4,13 +4,13 @@ import * as p5 from "p5"
 import Graphics from "p5"
 import * as Clipboard from "clipboard";
 import * as Util from "./util";
+import {dashedLine} from "./util";
 import {MyP5} from "./extension";
 import {History} from "./history";
 import {getSegmentId, pathTest} from "./page";
 import {getUsername, hasSetUsername, INVALID_USERNAME_MSG, saveUsername, validUsername} from "./auth";
 import {load, Segment, SketchData} from "./data";
 import {newAsyncVideo, VideoStream} from './video';
-import { dashedLine } from './util';
 
 const allP5s = new Array<p5>();
 
@@ -75,8 +75,8 @@ class Controller {
 
     history: History<Drawn>
 
-    videoStream:VideoStream
-    videoLoading:boolean
+    videoStream: VideoStream
+    videoLoading: boolean
 
 
     constructor(sketch: MyP5, loadedSegmentsMetadata: SketchData, container: HTMLElement) {
@@ -92,18 +92,6 @@ class Controller {
 
         this.loadData(this.sketch)
 
-        $(window).on("unload", () => {
-            this.Unload()
-        });
-
-        $(document.body).on("unload", () => {
-            this.Unload()
-        })
-
-        $("a").on("click", () => {
-            this.Unload()
-        })
-
         if (this.stage === Util.END_STAGE || !hasSetUsername()) {
             this.sketch.noLoop()
         }
@@ -116,6 +104,18 @@ class Controller {
             this.setupGalleryMessage()
             return
         }
+
+        $(window).on("unload", () => {
+            this.Unload()
+        });
+
+        $(document.body).on("unload", () => {
+            this.Unload()
+        })
+
+        $("a").on("click", () => {
+            this.Unload()
+        })
 
         $("#copyShareUrlBtn").click(() => {
             this.generateShareURL();
@@ -150,33 +150,33 @@ class Controller {
 
 
         $("#captureWebcamButton").on("click", () => {
-            if (this.videoLoading){
+            if (this.videoLoading) {
                 return
             }
-            if (this.videoStream){
+            if (this.videoStream) {
                 //capture image and delete video
                 const img = this.videoStream.capture()
                 this.history.startGroup()
                 this.history.add({
-                    color: "",
+                    color: "#000",
                     strokeWidth: 0,
-                    position: null,
+                    position: [0, 0],
                     mode: DRAWMODE_IMAGE,
                     image: img,
                 })
 
                 this.videoStream.cleanup()
-                this.videoStream=null
-                $("#captureWebcamButton")[0].innerText="Capture Webcam"
-            }else{
-                $("#captureWebcamButton")[0].innerText="Loading Webcam..."
+                this.videoStream = null
+                $("#captureWebcamButton")[0].innerText = "Capture Webcam"
+            } else {
+                $("#captureWebcamButton")[0].innerText = "Loading Webcam..."
                 this.videoLoading = true
-                if (this.videoStream){
+                if (this.videoStream) {
                     return
                 }
-                newAsyncVideo(function (video:VideoStream) {
-                    $("#captureWebcamButton")[0].innerText="Save Webcam Image"
-                    controller.videoStream=video
+                newAsyncVideo(function (video: VideoStream) {
+                    $("#captureWebcamButton")[0].innerText = "Save Webcam Image"
+                    controller.videoStream = video
                     controller.videoLoading = false
                 })
             }
@@ -189,7 +189,7 @@ class Controller {
         const creatorsSentence = "Drawn by " + this.getCreatorsList() + "."
         const lastSegment = this.loadedSegmentsMetadata.lastSegment
         let url = this.createSegmentUrl(lastSegment.id);
-        $(this.container).prepend('<p>' + creatorsSentence + ' <a href="' + url + '" target="_blank">Direct Link</a></p>')
+        $(this.container).prepend('<p>' + creatorsSentence + ' <a href="' + url + '">Direct Link</a></p>')
     }
 
     private setupInstructions() {
@@ -265,13 +265,12 @@ class Controller {
         this.sketch.noSmooth()
 
 
-        this.drawVideo()
-
         var i = 0
         _.each(this.buffers, function (buffer) {
             controller.sketch.image(buffer, 0, controller.sectionHeight * i, controller.sectionWidth, controller.sectionHeightMid)
             ++i
         })
+        this.drawVideo()
         this.sketch.smooth()
 
         if (this.drawingAllowed()) {
@@ -337,8 +336,8 @@ class Controller {
         }
     }
 
-    private drawVideo(){
-        if (this.videoStream && this.videoStream.video.videoWidth > 0){
+    private drawVideo() {
+        if (this.videoStream && this.videoStream.video.videoWidth > 0) {
             //@ts-ignore
             const ctx = this.sketch.canvas.getContext("2d")
 
@@ -347,7 +346,7 @@ class Controller {
             const destWidth = this.bufferWidth
             const destHeight = this.bufferHeightMid//Math.min(srcHeight*widthRatio, this.bufferHeightMid*10000)
 
-            ctx.drawImage(this.videoStream.video, 0, 0, srcWidth, srcHeight, 0,0, destWidth, destHeight)
+            ctx.drawImage(this.videoStream.video, 0, 0, srcWidth, srcHeight, 0, 0, destWidth, destHeight)
         }
     }
 
@@ -432,6 +431,18 @@ class Controller {
                     this.drawBuffer.push()
                     this.drawBuffer.fill(0)
                     this.drawBuffer.stroke(0)
+                } else if (item.mode === DRAWMODE_IMAGE) {
+                    // @ts-ignore
+                    const ctx = this.drawBuffer.canvas.getContext("2d")
+
+                    const srcWidth = item.image.width
+                    const srcHeight = item.image.height
+                    const destWidth = this.bufferWidth
+                    const destHeight = this.bufferHeightMid
+
+                    ctx.drawImage(item.image, 0, 0, srcWidth, srcHeight, 0, 0, destWidth, destHeight)
+
+                    continue
                 }
                 this.drawBuffer.strokeWeight(drawSize)
                 this.drawBuffer.line(px, py, item.position[0], item.position[1])
@@ -459,10 +470,10 @@ class Controller {
         let latestBufferData = serialize(this.buffers[this.stage.id])
 
         let gameId = getSegmentId()
-        let path = "/api/v1/segments/"
+        let path = "/api/v1/segments"
 
         if (gameId !== null) {
-            path = path + gameId;
+            path = path + "/" + gameId
         }
         let controller = this
         $.ajax({
@@ -551,6 +562,23 @@ class Controller {
         if (this.sketch.key === 'r' || this.sketch.key === 'R') {
             this.history.redo()
         }
+
+        if(this.sketch.key === '1') {
+            this.penSize = 1
+        }
+        if(this.sketch.key === '2') {
+            this.penSize = 5
+        }
+        if(this.sketch.key === '3') {
+            this.penSize = 15
+        }
+        if(this.sketch.key === '4') {
+            this.penSize = 30
+        }
+        if(this.sketch.key === '5') {
+            this.penSize = 100
+        }
+
     }
 
     mousePressed = (e: object | undefined) => {
