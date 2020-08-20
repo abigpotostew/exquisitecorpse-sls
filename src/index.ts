@@ -32,8 +32,6 @@ function newSketchContainerEl() {
 }
 
 interface Drawn {
-    //color, position, size
-    // mode- draw/erase
     color: string
     position: number[]
     strokeWidth: number
@@ -77,7 +75,6 @@ class Controller {
 
     videoStream: VideoStream
     videoLoading: boolean
-
 
     constructor(sketch: MyP5, loadedSegmentsMetadata: SketchData, container: HTMLElement) {
         this.sketch = sketch;
@@ -251,19 +248,16 @@ class Controller {
         return this.stage !== Util.END_STAGE
     }
 
-
     draw() {
         const sketch = this.sketch
         const controller = this
+
         if (!this.sketch.focused) {
-            // console.debug("lost focus removing mouse events")
-            this.activeDrawingInfo = null
+            this.stopDrawing()
         }
 
         this.sketch.background(255)
-
         this.sketch.noSmooth()
-
 
         var i = 0
         _.each(this.buffers, function (buffer) {
@@ -274,7 +268,6 @@ class Controller {
         this.sketch.smooth()
 
         if (this.drawingAllowed()) {
-
             _.each(Util.stageSelections(), function (i: Util.Stage) {
                 if (controller.stage.id > i.id) {
                     sketch.push()
@@ -290,7 +283,6 @@ class Controller {
                 if (i.id != Util.Stages.HEAD) {
                     sketch.stroke(0, 0, 255)
                     sketch.strokeWeight(2)
-                    // sketch.line(0, sectionHeight * i, sketch.width, sectionHeight * i)
                     dashedLine(sketch, 0, controller.sectionHeight * i.id, sketch.width, controller.sectionHeight * i.id, null, null)
                     if (controller.stage.id + 1 === i.id) {
                         sketch.noStroke()
@@ -304,8 +296,7 @@ class Controller {
 
         this.recordDrawStroke()
 
-        this.drawAll()
-
+        this.drawHistory()
 
         if (this.debugText) {
             sketch.push()
@@ -317,14 +308,6 @@ class Controller {
         }
 
         if (!this.drawingAllowed()) {
-            // //remove all buffers to free memory
-            // _.each(buffers, function (buffer) {
-            //     buffer.remove()
-            // })
-            // buffers = null
-            // console.log("cleared buffers")
-            //todo why doesn't this work!?
-            // unloadBuffers(buffers)
             for (var i = 0; i < this.buffers.length; ++i) {
                 this.buffers[i].remove()
                 // @ts-ignore
@@ -340,11 +323,10 @@ class Controller {
         if (this.videoStream && this.videoStream.video.videoWidth > 0) {
             //@ts-ignore
             const ctx = this.sketch.canvas.getContext("2d")
-
             const srcWidth = this.videoStream.video.videoWidth
             const srcHeight = this.videoStream.video.videoHeight
             const destWidth = this.bufferWidth
-            const destHeight = this.bufferHeightMid//Math.min(srcHeight*widthRatio, this.bufferHeightMid*10000)
+            const destHeight = this.bufferHeightMid
 
             ctx.drawImage(this.videoStream.video, 0, 0, srcWidth, srcHeight, 0, this.bufferHeight*this.stage.id, destWidth, destHeight)
         }
@@ -405,7 +387,7 @@ class Controller {
         }
     }
 
-    private drawAll() {
+    private drawHistory() {
         if (!this.drawingAllowed()) {
             return
         }
@@ -685,13 +667,13 @@ class Controller {
                 }
                 controller.stage = Util.stageFromId((i) + 1)
 
-
                 controller.buffers.push(sketch.createGraphics(controller.bufferWidth, controller.bufferHeightMid)) //todo get this height figure out
                 controller.buffers[i].clear()
 
                 let img = document.getElementById("imageDataLoader" + segment.id)
                 // @ts-ignore
-                controller.buffers[i].canvas.getContext("2d").drawImage(img, 0, 0, controller.bufferWidth, controller.bufferHeightMid)//, bufferWidth, bufferHeightMid)
+                const ctx =controller.buffers[i].canvas.getContext("2d")
+                ctx.drawImage(img, 0, 0, controller.bufferWidth, controller.bufferHeightMid)
                 i += 1
                 img.remove()
 

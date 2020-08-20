@@ -183,7 +183,6 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 
 	group.GET("/static/*path", func(c *gin.Context) {
 		c.FileFromFS(c.Param("path"), staticFs)
-		//c.Header("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
 	})
 
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
