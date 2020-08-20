@@ -9,6 +9,8 @@ import {History} from "./history";
 import {getSegmentId, pathTest} from "./page";
 import {getUsername, hasSetUsername, INVALID_USERNAME_MSG, saveUsername, validUsername} from "./auth";
 import {load, Segment, SketchData} from "./data";
+import {newAsyncVideo, VideoStream} from './video';
+import { dashedLine } from './util';
 
 const allP5s = new Array<p5>();
 
@@ -36,12 +38,14 @@ interface Drawn {
     position: number[]
     strokeWidth: number
     mode: string
+    image?: HTMLImageElement
 }
 
 const imageFormat = "image/png";
 const imageQuality = 1.0
 const DRAWMODE_DRAW = "Draw"
 const DRAWMODE_ERASE = "Erase"
+const DRAWMODE_IMAGE = "Image"
 
 class Controller {
 
@@ -70,6 +74,10 @@ class Controller {
     debugText: string
 
     history: History<Drawn>
+
+    videoStream:VideoStream
+    videoLoading:boolean
+
 
     constructor(sketch: MyP5, loadedSegmentsMetadata: SketchData, container: HTMLElement) {
         this.sketch = sketch;
@@ -139,6 +147,42 @@ class Controller {
         $("#redoButton").on("click", () => {
             this.history.redo()
         })
+
+
+        $("#captureWebcamButton").on("click", () => {
+            if (this.videoLoading){
+                return
+            }
+            if (this.videoStream){
+                //capture image and delete video
+                const img = this.videoStream.capture()
+                this.history.startGroup()
+                this.history.add({
+                    color: "",
+                    strokeWidth: 0,
+                    position: null,
+                    mode: DRAWMODE_IMAGE,
+                    image: img,
+                })
+
+                this.videoStream.cleanup()
+                this.videoStream=null
+                $("#captureWebcamButton")[0].innerText="Capture Webcam"
+            }else{
+                $("#captureWebcamButton")[0].innerText="Loading Webcam..."
+                this.videoLoading = true
+                if (this.videoStream){
+                    return
+                }
+                newAsyncVideo(function (video:VideoStream) {
+                    $("#captureWebcamButton")[0].innerText="Save Webcam Image"
+                    controller.videoStream=video
+                    controller.videoLoading = false
+                })
+            }
+        })
+
+
     }
 
     private setupGalleryMessage() {
@@ -207,56 +251,6 @@ class Controller {
         return this.stage !== Util.END_STAGE
     }
 
-    private dashedLine(sketch: p5, x1: number, y1: number, x2: number, y2: number, l: number, g: number) {
-        var pc = sketch.dist(x1, y1, x2, y2) / 100;
-        var pcCount = 1;
-
-        var lPercent, gPercent = 0;
-        var currentPos = 0;
-        var xx1, yy1, xx2, yy2 = 0;
-
-        while (sketch.int(pcCount * pc) < l) {
-            pcCount++
-        }
-        lPercent = pcCount;
-        pcCount = 1;
-        while (sketch.int(pcCount * pc) < g) {
-            pcCount++
-        }
-        gPercent = pcCount;
-
-        lPercent = lPercent / 100;
-        gPercent = gPercent / 100;
-        while (currentPos < 1) {
-            xx1 = sketch.lerp(x1, x2, currentPos);
-            yy1 = sketch.lerp(y1, y2, currentPos);
-            xx2 = sketch.lerp(x1, x2, currentPos + lPercent);
-            yy2 = sketch.lerp(y1, y2, currentPos + lPercent);
-            if (x1 > x2) {
-                if (xx2 < x2) {
-                    xx2 = x2;
-                }
-            }
-            if (x1 < x2) {
-                if (xx2 > x2) {
-                    xx2 = x2;
-                }
-            }
-            if (y1 > y2) {
-                if (yy2 < y2) {
-                    yy2 = y2;
-                }
-            }
-            if (y1 < y2) {
-                if (yy2 > y2) {
-                    yy2 = y2;
-                }
-            }
-
-            sketch.line(xx1, yy1, xx2, yy2);
-            currentPos = currentPos + lPercent + gPercent;
-        }
-    }
 
     draw() {
         const sketch = this.sketch
@@ -269,6 +263,10 @@ class Controller {
         this.sketch.background(255)
 
         this.sketch.noSmooth()
+
+
+        this.drawVideo()
+
         var i = 0
         _.each(this.buffers, function (buffer) {
             controller.sketch.image(buffer, 0, controller.sectionHeight * i, controller.sectionWidth, controller.sectionHeightMid)
@@ -277,6 +275,7 @@ class Controller {
         this.sketch.smooth()
 
         if (this.drawingAllowed()) {
+
             _.each(Util.stageSelections(), function (i: Util.Stage) {
                 if (controller.stage.id > i.id) {
                     sketch.push()
@@ -293,7 +292,7 @@ class Controller {
                     sketch.stroke(0, 0, 255)
                     sketch.strokeWeight(2)
                     // sketch.line(0, sectionHeight * i, sketch.width, sectionHeight * i)
-                    controller.dashedLine(sketch, 0, controller.sectionHeight * i.id, sketch.width, controller.sectionHeight * i.id, null, null)
+                    dashedLine(sketch, 0, controller.sectionHeight * i.id, sketch.width, controller.sectionHeight * i.id, null, null)
                     if (controller.stage.id + 1 === i.id) {
                         sketch.noStroke()
                         sketch.fill(0, 0, 255)
@@ -307,6 +306,7 @@ class Controller {
         this.recordDrawStroke()
 
         this.drawAll()
+
 
         if (this.debugText) {
             sketch.push()
@@ -334,6 +334,20 @@ class Controller {
                 this.buffers[i].canvas.width = 0
             }
             this.buffers = []
+        }
+    }
+
+    private drawVideo(){
+        if (this.videoStream && this.videoStream.video.videoWidth > 0){
+            //@ts-ignore
+            const ctx = this.sketch.canvas.getContext("2d")
+
+            const srcWidth = this.videoStream.video.videoWidth
+            const srcHeight = this.videoStream.video.videoHeight
+            const destWidth = this.bufferWidth
+            const destHeight = this.bufferHeightMid//Math.min(srcHeight*widthRatio, this.bufferHeightMid*10000)
+
+            ctx.drawImage(this.videoStream.video, 0, 0, srcWidth, srcHeight, 0,0, destWidth, destHeight)
         }
     }
 
@@ -386,6 +400,7 @@ class Controller {
                 strokeWidth: drawSize,
                 position: xy,
                 mode: this.drawMode
+
             }
             this.history.add(drawn)
         }
