@@ -16,9 +16,5 @@ export function validUsername(username:string){
 
 export function saveUsername(username: string){
     const encodedUsername = encodeURI(username)
-    var now = new Date();
-    var time = now.getTime();
-    var expireTime = time + 48 * 60 * 60 * 1000; //48 hours
-    now.setTime(expireTime);
-    document.cookie = 'username=' + encodedUsername + ';expires=' + now.toUTCString() + ';path=/';
+    document.cookie = 'username=' + encodedUsername + ';path=/';
 }
