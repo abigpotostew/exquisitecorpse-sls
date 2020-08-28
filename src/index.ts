@@ -97,22 +97,12 @@ class Controller {
             this.setupInstructions()
         }
 
+        this.unloadEvent()
+
         if (pathTest("gallery")) {
             this.setupGalleryMessage()
             return
         }
-
-        $(window).on("unload", () => {
-            this.Unload()
-        });
-
-        $(document.body).on("unload", () => {
-            this.Unload()
-        })
-
-        $("a").on("click", () => {
-            this.Unload()
-        })
 
         $("#copyShareUrlBtn").click(() => {
             this.generateShareURL();
@@ -180,6 +170,20 @@ class Controller {
         })
 
 
+    }
+
+    private unloadEvent(){
+        $(window).on("unload", () => {
+            this.Unload()
+        });
+
+        $(document.body).on("unload", () => {
+            this.Unload()
+        })
+
+        $("a").on("click", () => {
+            this.Unload()
+        })
     }
 
     private setupGalleryMessage() {
