@@ -32,7 +32,7 @@ var ginLambda *ginadapter.GinLambda
 func init() {
 	sess := session.Must(session.NewSession())
 	s3Sess := s3.New(sess)
-	staticService := static.S3Service{S3: s3Sess, BucketName: os.Getenv("staticBucket")}
+	staticService := static.S3Service{S3: s3Sess, BucketName: os.Getenv("staticBucket"), Cache: make(map[string]*static.File)}
 
 	// stdout and stderr are sent to AWS CloudWatch Logs
 	log.Printf("Gin cold start")

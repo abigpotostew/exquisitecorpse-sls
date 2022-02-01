@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/httperror"
@@ -38,12 +39,16 @@ type SegmentData struct {
 }
 
 type HomePageData struct {
-	Segments []SegmentData
-	Title    string
+	Segments    []SegmentData
+	Title       string
+	RelativeUrl string
+	Hostname    string
 }
 
 type AboutPageData struct {
-	Title string
+	Title       string
+	RelativeUrl string
+	Hostname    string
 }
 
 type GalleryPageData struct {
@@ -51,6 +56,8 @@ type GalleryPageData struct {
 	GalleryNextToken string
 	IsTruncated      bool
 	Title            string
+	RelativeUrl      string
+	Hostname         string
 }
 
 func fetchForId(c *gin.Context, service segment.Service, segmentId string, group int) ([]SegmentData, error) {
@@ -93,17 +100,24 @@ func fetchForId(c *gin.Context, service segment.Service, segmentId string, group
 
 func ginHandle(service segment.Service, staticService static.Service, group *gin.RouterGroup) {
 
+	hostname := os.Getenv("HOSTNAME")
+	if hostname == "" {
+		hostname = "https://playexquisitecorpse.com"
+	}
+
 	staticFs := http.Dir("dist")
 
 	group.GET("/", func(c *gin.Context) {
-		data := HomePageData{}
+		data := HomePageData{RelativeUrl: "/", Hostname: hostname}
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
 	})
 
 	group.GET("/robots.txt", func(c *gin.Context) {
 		c.FileFromFS("robots.txt", staticFs)
+	})
 
-		//c.File("static/robots.txt")
+	group.GET("/share.jpg", func(c *gin.Context) {
+		c.FileFromFS("share.jpg", staticFs)
 	})
 
 	group.GET("/game/:id", func(c *gin.Context) {
@@ -117,13 +131,13 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 			c.JSON(httperror.Response(err))
 			return
 		}
-		data := HomePageData{Segments: segmentData, Title: ""}
+		data := HomePageData{Segments: segmentData, Title: "", RelativeUrl: "/game/" + c.Param("id")}
 
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
 	})
 
 	group.GET("/about", func(c *gin.Context) {
-		data := AboutPageData{Title: "About - "}
+		data := AboutPageData{Title: "About - ", RelativeUrl: "/about", Hostname: hostname}
 		c.HTML(http.StatusOK, "about.html.tmpl", data)
 	})
 
@@ -167,22 +181,27 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 			return
 		}
 
+		url := "/gallery"
+
 		galleryNextToken := ""
 		if out.ContinuationToken != nil {
 			galleryNextToken = *out.ContinuationToken
+			url = url + "?q=" + galleryNextToken
 		}
 		data := GalleryPageData{
 			Segments:         allSegments,
 			GalleryNextToken: galleryNextToken,
 			IsTruncated:      out.IsTruncated,
 			Title:            "Gallery - ",
+			RelativeUrl:      url,
+			Hostname:         hostname,
 		}
 
 		c.HTML(http.StatusOK, "gallery.html.tmpl", data)
 	})
 
 	group.GET("/static/*path", func(c *gin.Context) {
-		c.FileFromFS(c.Param("path"), staticFs)
+		c.FileFromFS(strings.TrimPrefix(c.Param("path"),"/"), staticFs)
 	})
 
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
@@ -269,6 +288,9 @@ func main() {
 		GalleryBucketName: os.Getenv("galleryBucket"),
 	}
 
+	println("LOCAL_STATIC_SERVER_DIR", os.Getenv("LOCAL_STATIC_SERVER_DIR"))
+	println("HOSTNAME", os.Getenv("HOSTNAME"))
+
 	var staticService static.Service
 	if os.Getenv("LOCAL_STATIC_SERVER_DIR") != "" {
 		dir := os.Getenv("LOCAL_STATIC_SERVER_DIR")
@@ -284,6 +306,7 @@ func main() {
 	r.LoadHTMLFiles("dist/common.html.tmpl", "dist/gallery.html.tmpl", "dist/about.html.tmpl", "dist/index.html.tmpl")
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
+	//authorized.Use(middleware.Header())
 	ginHandle(service, staticService, authorized)
 	if os.Getenv("LOCALHOST_PORT") != "" {
 		log.Println("Running as localhost on port 8080")

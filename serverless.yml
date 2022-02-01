@@ -50,6 +50,7 @@ functions:
       imageBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-images
       galleryBucket: ${self:service}-${self:provider.stage}-${self:provider.region}-gallery
       LOCAL_STATIC_SERVER_DIR: ${self:custom.config.localStaticServerDir}
+      HOSTNAME: ${self:custom.config.domain}
     events:
       - http:
           path: /

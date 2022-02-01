@@ -749,6 +749,7 @@ function newSketch(loadedSegmentsMetadata: SketchData, containerEl: HTMLElement)
     allP5s.push(thisp5)
 }
 
+//@ts-ignore
 new Clipboard('#shareUrlCopyBtn');
 
 $("#saveSetUsernameBtn").on("click", function () {

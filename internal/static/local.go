@@ -41,8 +41,10 @@ func (l *LocalService) Get(filename string) (File, error) {
 		contentType = mime.TypeByExtension(filename[extIdx:])
 	}
 
-	return File{
+	out := File{
 		ContentType: contentType,
 		Data:        data,
-	}, nil
+	}
+
+	return out, nil
 }

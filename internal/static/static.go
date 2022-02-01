@@ -23,6 +23,7 @@ type S3Service struct {
 }
 
 func (s *S3Service) Get(filename string) (File, error) {
+
 	head, err := s.S3.HeadObject(&s3.HeadObjectInput{
 		Bucket: &s.BucketName, Key: &filename,
 	})
@@ -40,8 +41,11 @@ func (s *S3Service) Get(filename string) (File, error) {
 	if err != nil {
 		return File{}, err
 	}
-	return File{
+
+	out := File{
 		ContentType: *head.ContentType,
 		Data:        body,
-	}, nil
+	}
+
+	return out, nil
 }
