@@ -1,8 +1,8 @@
 package main
 
 import (
-	"context"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -13,19 +13,17 @@ import (
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/httperror"
 	"golang.org/x/sync/errgroup"
 
+	templates "github.com/abigpotostew/exquisitecorpse-sls"
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/static"
 
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/auth"
 	"github.com/abigpotostew/exquisitecorpse-sls/internal/segment"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 )
-
-var ginLambda *ginadapter.GinLambda
 
 const requiredImageType = "image/png"
 
@@ -105,7 +103,12 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		hostname = "https://playexquisitecorpse.com"
 	}
 
-	staticFs := http.Dir("dist")
+	// Get the embedded dist filesystem
+	distFS, err := fs.Sub(templates.FS, "dist")
+	if err != nil {
+		panic(err)
+	}
+	staticFs := http.FS(distFS)
 
 	group.GET("/", func(c *gin.Context) {
 		data := HomePageData{RelativeUrl: "/", Hostname: hostname}
@@ -201,7 +204,7 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 	})
 
 	group.GET("/static/*path", func(c *gin.Context) {
-		c.FileFromFS(strings.TrimPrefix(c.Param("path"),"/"), staticFs)
+		c.FileFromFS(strings.TrimPrefix(c.Param("path"), "/"), staticFs)
 	})
 
 	group.POST("/api/v1/segments/:parent", func(c *gin.Context) {
@@ -275,45 +278,53 @@ func handleCreate(c *gin.Context, service segment.Service) {
 
 }
 
-func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// If no name is provided in the HTTP request body, throw an error
-	return ginLambda.ProxyWithContext(ctx, req)
-}
-
 func main() {
-	sess := session.Must(session.NewSession())
+	//possibly load from env variables
+	secretKey := os.Getenv("AWS_SECRET_KEY")
+	accessKey := os.Getenv("AWS_ACCESS_KEY")
+	var sess *session.Session
+	if secretKey != "" && accessKey != "" {
+		sess = session.Must(session.NewSession(&aws.Config{
+			Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
+			Region:      aws.String(os.Getenv("AWS_REGION")),
+		}))
+
+	} else {
+		sess = session.Must(session.NewSession())
+	}
 	s3Sess := s3.New(sess)
 	service := &segment.S3Service{
 		S3: s3Sess, BucketName: os.Getenv("imageBucket"),
 		GalleryBucketName: os.Getenv("galleryBucket"),
 	}
 
-	println("LOCAL_STATIC_SERVER_DIR", os.Getenv("LOCAL_STATIC_SERVER_DIR"))
+	// println("LOCAL_STATIC_SERVER_DIR", os.Getenv("LOCAL_STATIC_SERVER_DIR"))
 	println("HOSTNAME", os.Getenv("HOSTNAME"))
 
 	var staticService static.Service
-	if os.Getenv("LOCAL_STATIC_SERVER_DIR") != "" {
-		dir := os.Getenv("LOCAL_STATIC_SERVER_DIR")
-		staticService = &static.LocalService{RootFolder: dir}
-		log.Printf("Loaded local static service at directory %v", dir)
-	} else {
-		staticService = &static.S3Service{S3: s3Sess, BucketName: os.Getenv("staticBucket")}
-		log.Printf("Loaded S3 static service")
-	}
+	// if os.Getenv("LOCAL_STATIC_SERVER_DIR") != "" {
+	dir := os.Getenv("LOCAL_STATIC_SERVER_DIR")
+	staticService = &static.LocalService{RootFolder: dir}
+	log.Printf("Loaded local static service at directory %v", dir)
+	// } else {
+	// 	staticService = &static.S3Service{S3: s3Sess, BucketName: os.Getenv("staticBucket")}
+	// 	log.Printf("Loaded S3 static service")
+	// }
 
 	r := gin.Default()
-	//r.LoadHTMLFiles("static/index.html.tmpl")
-	r.LoadHTMLFiles("dist/common.html.tmpl", "dist/gallery.html.tmpl", "dist/about.html.tmpl", "dist/index.html.tmpl")
+
+	// Load templates from embedded filesystem
+	tmpl := template.Must(template.New("").ParseFS(templates.FS, "dist/*.tmpl"))
+	r.SetHTMLTemplate(tmpl)
+
 	authorized := r.Group("/")
 	authorized.Use(auth.UsernameContext())
 	//authorized.Use(middleware.Header())
 	ginHandle(service, staticService, authorized)
-	if os.Getenv("LOCALHOST_PORT") != "" {
-		log.Println("Running as localhost on port 8080")
-		r.Run()
-	} else {
-		log.Println("Running as lambda")
-		ginLambda = ginadapter.New(r)
-		lambda.Start(Handler)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
+	log.Println("Running as localhost on port", port)
+	r.Run(":" + port)
 }

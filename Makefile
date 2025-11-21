@@ -22,3 +22,8 @@ deploy: clean build package
 
 deployClient:
 	sls s3deploy --verbose --stage $(STAGE)
+
+dev:
+	# load .env file, make sure to export the variables to the environment
+	export $(cat .env | xargs)
+	go run cmd/api/main.go
