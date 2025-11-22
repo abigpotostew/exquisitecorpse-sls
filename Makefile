@@ -52,6 +52,14 @@ dev:
 docker-build:
 	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
+# Build for AMD64 (x86_64) - useful for cloud deployment from ARM Macs
+docker-build-amd64:
+	docker build --platform linux/amd64 -t $(IMAGE_NAME):$(IMAGE_TAG) .
+
+# Build for ARM64 - useful for ARM-based servers or local Apple Silicon
+docker-build-arm64:
+	docker build --platform linux/arm64 -t $(IMAGE_NAME):$(IMAGE_TAG) .
+
 # Build with no cache (for clean builds)
 docker-build-no-cache:
 	docker build --no-cache -t $(IMAGE_NAME):$(IMAGE_TAG) .

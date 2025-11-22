@@ -43,7 +43,8 @@ COPY --from=frontend-builder /app/dist ./dist
 # CGO_ENABLED=0 for static binary
 # -ldflags="-s -w" to reduce binary size
 # -trimpath to remove file system paths from binary for better reproducibility
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+# GOARCH is automatically set to match the target platform
+RUN CGO_ENABLED=0 go build \
     -ldflags="-s -w" \
     -trimpath \
     -o /build/bin/api \
