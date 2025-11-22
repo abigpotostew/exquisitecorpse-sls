@@ -1,0 +1,71 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+bin/
+build/
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+*.test
+testdata/
+*_test.go
+
+# Documentation
+README.md
+LICENSE
+*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.config.yml
+config/my.config.yml
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Package files
+*.zip
+*.tar.gz
+
+# NPM - keep build files, only exclude unnecessary ones
+# package.json - NEEDED for npm install
+# package-lock.json - NEEDED for npm ci
+# tsconfig.json - NEEDED for TypeScript build
+# webpack.*.js - NEEDED for webpack build
+# src/ - NEEDED for frontend build
+
+# Serverless
+.serverless/
+serverless.yml
+
+# Makefile (not needed in container)
+Makefile
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+

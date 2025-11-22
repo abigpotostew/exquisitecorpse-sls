@@ -7,20 +7,19 @@
     "watch": "webpack --config webpack.dev.js --watch"
   },
   "devDependencies": {
-    "@types/clipboard": "^2.0.1",
-    "@types/jquery": "^3.5.1",
-    "@types/lodash": "^4.14.158",
-    "@types/p5": "^0.9.1",
-    "jquery": "^3.5.1",
-    "p5": "^1.1.9",
-    "ts-loader": "^8.0.2",
-    "typescript": "^3.9.7",
-    "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12",
-    "webpack-merge": "^5.1.1"
+    "@types/jquery": "^3.5.30",
+    "@types/lodash": "^4.17.15",
+    "@types/p5": "^1.7.6",
+    "jquery": "^3.7.1",
+    "p5": "^1.11.2",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.2",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-merge": "^6.0.1"
   },
   "dependencies": {
-    "clipboard": "^2.0.6",
-    "lodash": "^4.17.20"
+    "clipboard": "^2.0.11",
+    "lodash": "^4.17.21"
   }
 }
