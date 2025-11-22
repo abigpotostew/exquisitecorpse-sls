@@ -115,6 +115,10 @@ func ginHandle(service segment.Service, staticService static.Service, group *gin
 		c.HTML(http.StatusOK, "index.html.tmpl", data)
 	})
 
+	group.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	group.GET("/robots.txt", func(c *gin.Context) {
 		c.FileFromFS("robots.txt", staticFs)
 	})
